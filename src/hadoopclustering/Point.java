@@ -3,20 +3,20 @@ package hadoopclustering;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.io.Serializable;
 import org.apache.hadoop.io.*;
 
 /**
  *
  * @author tibo
  */
-public class Point implements Writable, Serializable {
+public class Point implements Writable {
     public static int DIM = 3;
     public static String DELIMITER = ";";
     
     public long count = 0L;
     public double[] value = new double[DIM];
 
+    /* GETTERS and SETTERS */
     public long getCount() {
         return count;
     }
@@ -33,6 +33,7 @@ public class Point implements Writable, Serializable {
         this.value = value;
     }
 
+    /* WRITABLE interface */
     @Override
     public void write(DataOutput out) throws IOException {
         for (int i = 0; i < DIM; i++) {
@@ -50,7 +51,7 @@ public class Point implements Writable, Serializable {
         count = in.readLong();
     }
 
-    // Mandatory for TextOutputFormat
+    /* Will be used to store centers, with TextOutputFormat or Memcached */
     @Override
     public String toString() {
         String r = "" + value[0];
@@ -61,20 +62,7 @@ public class Point implements Writable, Serializable {
         return r;
     }
 
-    public static Point parse(String string) {
-        String[] array_string = string.split(DELIMITER);
-        double[] array_double = new double[array_string.length];
-        
-        for (int i = 0; i < DIM; i++) {
-            array_double[i] = Double.valueOf(array_string[i]);
-        }
-
-        Point point = new Point();
-        point.value = array_double;
-        point.count = 1;
-        return point;
-    }
-
+    /* Actual methods */
     double distance(Point other) {
         double distance = 0;
         for (int i = 0; i < DIM; i++) {
@@ -98,5 +86,20 @@ public class Point implements Writable, Serializable {
         }
 
         count = 1;
+    }
+    
+    /* Static String parser */
+    public static Point parse(String string) {
+        String[] array_string = string.split(DELIMITER);
+        double[] array_double = new double[array_string.length];
+        
+        for (int i = 0; i < DIM; i++) {
+            array_double[i] = Double.valueOf(array_string[i]);
+        }
+
+        Point point = new Point();
+        point.value = array_double;
+        point.count = 1;
+        return point;
     }
 }

@@ -67,11 +67,11 @@ public class Kmeans extends Configured implements Tool {
             job.setCombinerClass(KmeansCombine.class);
             
             job.setReducerClass(KmeansReduce.class);
+            // Nothing to write : centers will go to distributed cache
             job.setOutputKeyClass(NullWritable.class);
             job.setOutputValueClass(NullWritable.class);
             job.setOutputFormat(NullOutputFormat.class);
-            // Nothing to write : centers will go to distributed cache
-            
+                
             job.setInt("iteration", i);
             job.setInt("k", k);
             
