@@ -1,12 +1,4 @@
-/* To run :
- * /opt/hadoop-1.2.1/bin/hadoop jar 
- *     ./dist/hadoop-clustering.jar
- *     hadoopclustering.Kmeans
- *     -libjars /home/tibo/Java/spymemcached-2.9.1.jar 
- *     /synthetic.data
- * 
- * */
-package hadoopclustering;
+package kmeans;
 
 
 import java.io.*;
@@ -16,35 +8,28 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import net.spy.memcached.MemcachedClient;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.mapred.lib.NullOutputFormat;
-import org.apache.hadoop.util.Tool;
-import org.apache.hadoop.util.ToolRunner;
 
 /**
  *
  * @author tibo
  */
-public class Kmeans extends Configured implements Tool {
+public class Kmeans  {
     public int iterations = 3;
     public int k = 10;
     public String input_path = "";
     
-    public static void main(String[] args) throws Exception {
-        // Let ToolRunner handle generic command-line options 
-        int res = ToolRunner.run(new Configuration(), new Kmeans(), args);
-        System.exit(res);
-    }
+    protected Configuration conf;
 
-    @Override
-    public int run(String[] args) {
-        // Parse arguments
-        input_path = args[0];
-        
+    Kmeans(Configuration conf) {
+        this.conf = conf;
+    }
+    
+    public int run() {
         try {
             writeInitialCentersToCache();
         } catch (IOException ex) {
@@ -54,8 +39,8 @@ public class Kmeans extends Configured implements Tool {
         for (int i=0; i < iterations; i++) {
 
             // Create a JobConf using the conf processed by ToolRunner
-            JobConf job = new JobConf(getConf(), getClass());
-            job.setJobName("my-app");
+            JobConf job = new JobConf(conf, getClass());
+            job.setJobName("Kmeans");
             
             FileInputFormat.setInputPaths(job, new Path(input_path));
             job.setInputFormat(TextInputFormat.class);
@@ -85,7 +70,7 @@ public class Kmeans extends Configured implements Tool {
     }
     
     protected void writeInitialCentersToCache() throws IOException {
-        JobConf job = new JobConf(getConf());
+        JobConf job = new JobConf(conf);
 
         FileSystem fs = FileSystem.get(job);
         InputStream in = fs.open(new Path(input_path));
@@ -97,7 +82,7 @@ public class Kmeans extends Configured implements Tool {
         for (int i = 0; i < this.k; i++) {
             Point point = Point.parse(br.readLine());
             //System.out.println(point);
-            memcached.set("center_0_" + i, 0, point.toString()); // Point implements Serializable
+            memcached.set("center_0_" + i, 0, point.toString());
         }
 
         memcached.shutdown(5, TimeUnit.SECONDS);

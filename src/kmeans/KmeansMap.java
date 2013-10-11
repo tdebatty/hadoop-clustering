@@ -1,4 +1,4 @@
-package hadoopclustering;
+package kmeans;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;

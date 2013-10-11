@@ -1,4 +1,4 @@
-package hadoopclustering;
+package kmeans;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -15,23 +15,6 @@ public class Point implements Writable {
     
     public long count = 0L;
     public double[] value = new double[DIM];
-
-    /* GETTERS and SETTERS */
-    public long getCount() {
-        return count;
-    }
-
-    public void setCount(long count) {
-        this.count = count;
-    }
-
-    public double[] getValue() {
-        return value;
-    }
-
-    public void setValue(double[] value) {
-        this.value = value;
-    }
 
     /* WRITABLE interface */
     @Override
@@ -63,7 +46,7 @@ public class Point implements Writable {
     }
 
     /* Actual methods */
-    double distance(Point other) {
+    public double distance(Point other) {
         double distance = 0;
         for (int i = 0; i < DIM; i++) {
             distance += Math.pow(this.value[i] - other.value[i], 2);
@@ -71,7 +54,7 @@ public class Point implements Writable {
         return Math.sqrt(distance);
     }
 
-    void addPoint(Point other) {
+    public void addPoint(Point other) {
         for (int i = 0; i < DIM; i++) {
             value[i] += other.value[i];
         }
@@ -79,7 +62,7 @@ public class Point implements Writable {
         count+= other.count; // if a combiner is used...
     }
 
-    void reduce() {
+    public void reduce() {
         for (int i = 0; i < value.length; i++) {
             value[i] = value[i] / count;
 
