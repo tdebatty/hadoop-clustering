@@ -11,7 +11,7 @@ import org.apache.hadoop.io.*;
  */
 public class Point implements Writable {
     public static int DIM = 3;
-    public static String DELIMITER = ";";
+    public static String DELIMITER = ",";
     
     public long count = 0L;
     public double[] value = new double[DIM];

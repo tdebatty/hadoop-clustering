@@ -28,7 +28,7 @@ public class Main extends Configured implements Tool{
     public int run(String[] args) {
         Kmeans kmeans = new Kmeans(getConf());
         kmeans.input_path = args[0];
-        kmeans.k = 4;
+        kmeans.k = 10;
         kmeans.iterations = 5;
         kmeans.run();
 

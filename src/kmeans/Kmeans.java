@@ -8,6 +8,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import net.spy.memcached.MemcachedClient;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.*;
@@ -34,6 +35,7 @@ public class Kmeans  {
             writeInitialCentersToCache();
         } catch (IOException ex) {
             Logger.getLogger(Kmeans.class.getName()).log(Level.SEVERE, null, ex);
+            return 1;
         }
         
         for (int i=0; i < iterations; i++) {
@@ -64,6 +66,7 @@ public class Kmeans  {
                 JobClient.runJob(job);
             } catch (IOException ex) {
                 Logger.getLogger(Kmeans.class.getName()).log(Level.SEVERE, null, ex);
+                return 1;
             }
         }
         return 0;
@@ -73,7 +76,13 @@ public class Kmeans  {
         JobConf job = new JobConf(conf);
 
         FileSystem fs = FileSystem.get(job);
-        InputStream in = fs.open(new Path(input_path));
+        FileStatus fstatus = fs.getFileStatus(new Path(input_path));
+        
+        String input_file = input_path;
+        if (fstatus.isDir()) {
+            input_file = input_path + "/part-00000";
+        }
+        InputStream in = fs.open(new Path(input_file));
         BufferedReader br = new BufferedReader(new InputStreamReader(in));
 
         MemcachedClient memcached = new MemcachedClient(
