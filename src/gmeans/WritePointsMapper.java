@@ -16,9 +16,8 @@ import org.apache.hadoop.mapred.Reporter;
  *
  * @author tibo
  */
-public class Perform2MeansMapper implements Mapper<LongWritable, Text, LongWritable, Point> {
+public class WritePointsMapper implements Mapper<LongWritable, Text, LongWritable, Point> {
     private JobConf job;
-    private int kmeans_iteration;
     private int gmeans_iteration;
     private Point[] centers;
 
@@ -36,7 +35,16 @@ public class Perform2MeansMapper implements Mapper<LongWritable, Text, LongWrita
         int shortest = 0;
         int original_center_id = (int) point.center_id;
         
-        for (int i = 0; i < 2; i++) {
+        if (centers[original_center_id] == null) {
+            // this center was not retained by the test phase
+            // we found the center this point belongs to
+            // => no need to keep this point
+            
+            return;
+        }
+        
+        
+        for (int i = 0; i<2; i++) {
             int center_id = original_center_id + i * (int) Math.pow(2, (gmeans_iteration-1));
             distance = point.distance(centers[center_id]);
             if (distance < shortest_distance) {
@@ -53,22 +61,20 @@ public class Perform2MeansMapper implements Mapper<LongWritable, Text, LongWrita
     @Override
     public void configure(JobConf job) {
         this.job = job;
-        this.kmeans_iteration = job.getInt("kmeans_iteration", 0);
         this.gmeans_iteration = job.getInt("gmeans_iteration", 0);
 
         try {
             readCentersFromCache();
         } catch (IOException ex) {
-            Logger.getLogger(Perform2MeansMapper.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(WritePointsMapper.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
     @Override
     public void close() throws IOException {
         
-        
     }
-
+    
     private void readCentersFromCache() throws IOException {
         MemcachedClient memcached = new MemcachedClient(
                 new InetSocketAddress("127.0.0.1", 11211));
@@ -78,20 +84,13 @@ public class Perform2MeansMapper implements Mapper<LongWritable, Text, LongWrita
         String key = "";
         
         // Prefix for kmeans iteration 1
-        String prefix = "IT-" + gmeans_iteration + "_FIND_";
-        
-        if (kmeans_iteration > 1) {
-            // For other kmeans iterations
-            prefix = "IT-" + gmeans_iteration + "_2MEANS_" + (kmeans_iteration - 1) + "_";
-        }
-         
+        String prefix = "IT-" + gmeans_iteration + "_TEST_";         
         
         Object value;
         centers = new Point[number_centers];
         for (int i = 0; i < number_centers; i++) {
             key = prefix + i;
             value = memcached.get(key);
-            Logger.getLogger(Perform2MeansMapper.class.getName()).log(Level.INFO, key + " : " + value);
             if (value != null) {
                 centers[i] = Point.parse((String) value);
             }

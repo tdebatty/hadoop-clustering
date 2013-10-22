@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import net.spy.memcached.MemcachedClient;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -17,8 +19,17 @@ import org.apache.hadoop.mapred.Reporter;
  * @author tibo
  */
 public class Find2CentersReducer implements Reducer<LongWritable, Point, NullWritable, NullWritable> {
-    int n;
+    int gmeans_iteration;
     
+    /**
+     * key: IT-<gmeans_iteration>_FIND_<center_id> 
+     * and :IT-<gmeans_iteration>_FIND_<center_id + 2 ^ (gmeans_iteration-1)>
+     * @param center_id
+     * @param points
+     * @param collector
+     * @param reporter
+     * @throws IOException 
+     */
     @Override
     public void reduce(
             LongWritable center_id,
@@ -27,18 +38,18 @@ public class Find2CentersReducer implements Reducer<LongWritable, Point, NullWri
             Reporter reporter) throws IOException {
         
         // Write first point
-        String key = "IT" + n + "_CENTER" + center_id + "_0";
+        String key = "IT-" + gmeans_iteration + "_FIND_" + center_id;
         WriteToCache(key, points.next());
         
         // Write second point
-        key = "IT" + n + "_CENTER" + (center_id.get() + Math.pow(2, (n-1))) + "_0";
+        key = "IT-" + gmeans_iteration + "_FIND_" + (int) (center_id.get() + Math.pow(2, (gmeans_iteration-1))) ;
         WriteToCache(key, points.next());
         
     }
 
     @Override
     public void configure(JobConf jc) {
-        n = jc.getInt("n", 0);
+        gmeans_iteration = jc.getInt("gmeans_iteration", 0);
     }
 
     @Override
@@ -47,6 +58,8 @@ public class Find2CentersReducer implements Reducer<LongWritable, Point, NullWri
     }
     
     protected void WriteToCache(String key, Point point) throws IOException {
+        Logger.getLogger(Find2CentersMapper.class.getName()).log(Level.INFO, "Write " + key + " : " + point.toString());
+        
         MemcachedClient memcached = new MemcachedClient(
                 new InetSocketAddress("127.0.0.1", 11211));
 

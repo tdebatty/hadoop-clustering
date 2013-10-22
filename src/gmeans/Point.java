@@ -31,7 +31,7 @@ public class Point extends kmeans.Point {
     /* Static String parser */
     public static Point parse(String string) {
         String[] array_string = string.split(DELIMITER);
-        double[] array_double = new double[array_string.length];
+        double[] array_double = new double[DIM];
         
         for (int i = 0; i < DIM; i++) {
             array_double[i] = Double.valueOf(array_string[i]);
@@ -48,9 +48,4 @@ public class Point extends kmeans.Point {
         
         return point;
     }
-    
-    
-    
-    
-    
 }

@@ -1,9 +1,9 @@
 /* To run :
- * /opt/hadoop-1.2.1/bin/hadoop jar 
- *     ./dist/hadoop-clustering.jar
+ * /path/to/bin/hadoop jar 
+ *     /path/to/hadoop-clustering.jar
  *     kmeans.Main
- *     -libjars /home/tibo/Java/spymemcached-2.9.1.jar 
- *     /synthetic.data
+ *     -libjars /path/to/spymemcached-2.9.1.jar 
+ *     /input_file
  * 
  * */
 package kmeans;
@@ -28,6 +28,8 @@ public class Main extends Configured implements Tool{
     public int run(String[] args) {
         Kmeans kmeans = new Kmeans(getConf());
         kmeans.input_path = args[0];
+        kmeans.k = 4;
+        kmeans.iterations = 5;
         kmeans.run();
 
         return 0;

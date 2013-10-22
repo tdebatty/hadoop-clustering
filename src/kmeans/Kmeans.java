@@ -19,7 +19,7 @@ import org.apache.hadoop.mapred.lib.NullOutputFormat;
  * @author tibo
  */
 public class Kmeans  {
-    public int iterations = 3;
+    public int iterations = 5;
     public int k = 10;
     public String input_path = "";
     

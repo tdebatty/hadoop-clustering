@@ -20,6 +20,7 @@ public class Main extends Configured implements Tool{
     public int run(String[] args) {
         Gmeans gmeans = new Gmeans(getConf());
         gmeans.input_path = args[0];
+        gmeans.max_iterations = 5;
         
         gmeans.run();
         
