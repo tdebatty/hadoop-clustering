@@ -17,16 +17,12 @@ import org.apache.hadoop.mapred.Reporter;
  * @author tibo
  */
 class GeneratorRecordReader implements RecordReader<NullWritable, Text>{
-    private final JobConf job;
     private final int points_per_task;
     private int current_point = 0;
-    private final int dim;
     private final Center[] centers;
 
     GeneratorRecordReader(JobConf job) {
-        this.job = job;
         this.points_per_task = job.getInt(GeneratorInputFormat.POINTS_PER_TASK, -1);
-        this.dim = job.getInt(GeneratorInputFormat.DIMENSIONALITY, -1);
         this.centers = Center.parseAll(job.get(GeneratorInputFormat.CENTERS));
         
     }

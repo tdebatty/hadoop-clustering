@@ -45,13 +45,6 @@ public class Gmeans  {
     }
     
     public int run() {
-       /* try {
-            //WriteInitialCenterToCache();
-            
-        } catch (IOException ex) {
-            Logger.getLogger(Gmeans.class.getName()).log(Level.SEVERE, null, ex);
-            return 1;
-        }*/
 
         while (true) {
             gmeans_iteration++;
@@ -81,27 +74,7 @@ public class Gmeans  {
         
         return 0;
     }
-    
-    /**
-     * Write first point of dataset to cache
-     * in IT-0_TEST_0
-     * @throws IOException 
-     */
-    protected void WriteInitialCenterToCache() throws IOException {
-        JobConf job = new JobConf(conf);
-
-        FileSystem fs = FileSystem.get(job);
-        InputStream in = fs.open(new Path(input_path));
-        BufferedReader br = new BufferedReader(new InputStreamReader(in));
-
-        MemcachedClient memcached = new MemcachedClient(
-                new InetSocketAddress("127.0.0.1", 11211));
-
-        Point point = Point.parse(br.readLine());
-        memcached.set("IT-0_TEST_0", 0, point.toString());
-        memcached.shutdown(5, TimeUnit.SECONDS);
-    }
-    
+     
     protected void Find2Centers() throws IOException {
         // Create a JobConf using the conf processed by ToolRunner
         JobConf job = new JobConf(conf, getClass());

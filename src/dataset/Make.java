@@ -23,8 +23,16 @@ public class Make extends Configured implements Tool {
 
     @Override
     public int run(String[] args) {
+        if (args.length != 4) {
+            System.out.println("Usage : dataset.Make <output dir> <number of points> <number of centers> <dimensionality>");
+            return 1;
+        }
+        
         Generator mkd = new Generator(getConf());
         mkd.output = args[0];
+        mkd.num_points = Integer.valueOf(args[1]);
+        mkd.num_centers = Integer.valueOf(args[2]);
+        mkd.dim = Integer.valueOf(args[3]);
         mkd.run();
 
         return 0;

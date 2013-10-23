@@ -1,7 +1,3 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package dataset;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
@@ -12,8 +8,19 @@ import org.apache.commons.math3.distribution.NormalDistribution;
  */
 public class Center {
 
+    public static Center[] parseAll(String s) {
+        String[] array_string = s.split(":");
+        
+        Center[] centers = new Center[array_string.length];
+        
+        for (int i = 0; i < array_string.length; i++) {
+            centers[i] = Center.parse(array_string[i]);
+        }
+        
+        return centers;
+    }
+        
     public static Center parse(String string) {
-        System.out.println("Parsing single center : " + string);
         Center center = new Center();
         
         String[] array_string = string.split(",");
@@ -45,22 +52,8 @@ public class Center {
         r += "," + String.valueOf(weight);
         return r;
     }
-    
-    public static Center[] parseAll(String s) {
-        System.out.println("Parse centers from " + s);
-        String[] array_string = s.split(":");
-        System.out.println("Found " + array_string.length + " centers");
-        
-        Center[] centers = new Center[array_string.length];
-        
-        for (int i = 0; i < array_string.length; i++) {
-            centers[i] = Center.parse(array_string[i]);
-        }
-        
-        return centers;
-    }
 
-    String nextPoint() {
+    public String nextPoint() {
         String r = "" + distributions[0].sample();
         for (int i = 1; i < distributions.length; i++) {
             r += "," + distributions[i].sample();

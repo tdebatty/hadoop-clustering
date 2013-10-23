@@ -26,10 +26,15 @@ public class Main extends Configured implements Tool{
 
     @Override
     public int run(String[] args) {
+        if (args.length != 3) {
+            System.out.println("Usage: kmeans.Main <input path> <k> <iterations>");
+            return 1;
+        }
+        
         Kmeans kmeans = new Kmeans(getConf());
         kmeans.input_path = args[0];
-        kmeans.k = 10;
-        kmeans.iterations = 5;
+        kmeans.k = Integer.valueOf(args[1]);
+        kmeans.iterations = Integer.valueOf(args[2]);
         kmeans.run();
 
         return 0;

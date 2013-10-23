@@ -79,6 +79,7 @@ public class GeneratorInputFormat implements InputFormat<NullWritable, Text> {
     }
 
     private void ComputeCenters() {
+        
         centers = new Center[num_centers];
         
         for (int i = 0; i < num_centers; i++) {

@@ -26,16 +26,13 @@ class Generator {
 
     private final Configuration conf;
     public String output = "";
-    
-    
 
     Generator(Configuration conf) {
         this.conf = conf;
     }
 
     public int run() {
-        
-        
+
         // Create a JobConf using the conf processed by ToolRunner
         JobConf job = new JobConf(conf, getClass());
         job.setJobName("Make Dataset");
@@ -53,14 +50,13 @@ class Generator {
         job.setOutputKeyClass(NullWritable.class);
         job.setOutputValueClass(Text.class);
         job.setOutputFormat(TextOutputFormat.class);
-        
         TextOutputFormat.setOutputPath(job, new Path(output));
-
 
         try {
             JobClient.runJob(job);
         } catch (IOException ex) {
             Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, ex);
+            return 1;
         }
         return 0;
     }
