@@ -31,6 +31,13 @@ public class Kmeans  {
     }
     
     public int run() {
+        System.out.println("Kmeans clustering");
+        System.out.println("Iterations: " + iterations);
+        System.out.println("K: " + k);
+        System.out.println("Input path: " + input_path);
+        
+        long start = System.currentTimeMillis();
+        
         try {
             writeInitialCentersToCache();
         } catch (IOException ex) {
@@ -42,7 +49,7 @@ public class Kmeans  {
 
             // Create a JobConf using the conf processed by ToolRunner
             JobConf job = new JobConf(conf, getClass());
-            job.setJobName("Kmeans");
+            job.setJobName("Kmeans : " + i);
             
             FileInputFormat.setInputPaths(job, new Path(input_path));
             job.setInputFormat(TextInputFormat.class);
@@ -54,7 +61,7 @@ public class Kmeans  {
             job.setCombinerClass(KmeansCombine.class);
             
             job.setReducerClass(KmeansReduce.class);
-            // Nothing to write : centers will go to distributed cache
+            // Nothing to write : centers will go to cache
             job.setOutputKeyClass(NullWritable.class);
             job.setOutputValueClass(NullWritable.class);
             job.setOutputFormat(NullOutputFormat.class);
@@ -69,6 +76,11 @@ public class Kmeans  {
                 return 1;
             }
         }
+        
+        long end = System.currentTimeMillis();
+        
+        System.out.println("Clustering completed!");
+        System.out.println("Execution time: " + (end - start) + " ms");
         return 0;
     }
     

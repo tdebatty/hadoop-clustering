@@ -1,25 +1,11 @@
-/* To run :
- * /path/to/bin/hadoop jar 
- *     /path/to/hadoop-clustering.jar
- *     gmeans.Main 
- *     -libjars /home/tibo/Java/spymemcached-2.9.1.jar,/home/tibo/Java/commons-math3-3.2/commons-math3-3.2.jar
- *     /dataset_400_k4_d3.csv
- */
-
-
 package gmeans;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import net.spy.memcached.MemcachedClient;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.LongWritable;
@@ -45,6 +31,12 @@ public class Gmeans  {
     }
     
     public int run() {
+        System.out.println("Gmeans clustering");
+        System.out.println("Input path: " + input_path);
+        System.out.println("Output path:" + output_path);
+        System.out.println("Kmeans iterations: " + kmeans_iterations);
+        
+        long start = System.currentTimeMillis();
 
         while (true) {
             gmeans_iteration++;
@@ -55,8 +47,7 @@ public class Gmeans  {
                 TestNewCenters();
                 
                 if (ClusteringCompleted()) {
-                    System.out.println("Clustering completed!! :-)");
-                    return 0;
+                    break;
                 }
                 
                 WritePoints();
@@ -68,10 +59,13 @@ public class Gmeans  {
 
             if (gmeans_iteration == max_iterations) {
                 System.out.println("Max iterations count reached...");
-                break;
+                return 1;
             }
         }
         
+        long end = System.currentTimeMillis();
+        System.out.println("Clustering completed!! :-)");
+        System.out.println("Execution time: " + (end - start) + " ms");
         return 0;
     }
      
