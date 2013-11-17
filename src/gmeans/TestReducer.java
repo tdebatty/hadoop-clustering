@@ -26,7 +26,6 @@ import org.apache.hadoop.mapred.Reporter;
 public class TestReducer implements Reducer<LongWritable,DoubleWritable,NullWritable,NullWritable>{
     private JobConf job;
     private int gmeans_iteration;
-    private int kmeans_iterations;
     private Point[] centers;
 
     @Override
@@ -56,42 +55,24 @@ public class TestReducer implements Reducer<LongWritable,DoubleWritable,NullWrit
         
         if (adtest(values)) {
             // values seem to follow a normal law
-            // => don't keep new centers
+            // remove 2 new centers
+            // keep single old center, and mark as found!
+            System.out.println("Found a center : " + centers[(int) center_id.get()]);
+            Point center = centers[(int) center_id.get()];
+            center.found = true;
+            
+            writeCenterToCache("IT-" + (gmeans_iteration + 1) + "_CENTER-" + center_id.get(), center.toString());           
+            writeCenterToCache("IT-" + (gmeans_iteration + 1) + "_CENTER-" + (center_id.get() + (int) Math.pow(2, gmeans_iteration - 1)), "");
             
         } else {
-            Logger.getLogger(TestReducer.class.getName()).log(Level.INFO, "2 new centers!");
-            // values don't seem to follow a normal law
-            // Write new centers to cache
-            // key IT-<gmeans_iteration>_TEST_<center_id>
-            String key = "IT-" + gmeans_iteration + "_TEST_" + center_id;
-            writeCenterToCache(key, centers[(int) center_id.get()]);
-            
-            int second_center_id = (int) (center_id.get() + Math.pow(2, gmeans_iteration-1));
-            key = "IT-" + gmeans_iteration + "_TEST_" + second_center_id;
-            writeCenterToCache(key, centers[second_center_id]);
+            System.out.println("Gor further with 2 centers...");
         }
         
         
     }
     
-    protected boolean adtest(double[] values) {
-        /*$critical = 1.092; // Corresponds to alpha = 0.01
-        $nd = new \webd\stats\NormalDistribution();
-        $sorted = $this->sort();
-        $n = $this->length();
-        $A2 = -$n;
-        for ($i = 1; $i <= $n; $i++) {
-            $A2 += -(2 * $i - 1) / $n * ( log($nd->cumulativeProbability($sorted->value[$i - 1])) + log(1 - $nd->cumulativeProbability($sorted->value[$n - $i])) );
-        }
-        $A2_star = $A2 * (1 + 4 / $n - 25 / ($n * $n));
-        if ($A2_star > $critical) {
-            return FALSE;
-        } else {
-            // Data seems to follow a normal law
-            return TRUE;
-        }*/
-        
-        double critical = 1.092;
+    protected boolean adtest(double[] values) {        
+        double critical = 1.092; // Corresponds to alpha = 0.01
         NormalDistribution nd = new NormalDistribution();
         Arrays.sort(values);
         int n = values.length;
@@ -109,11 +90,11 @@ public class TestReducer implements Reducer<LongWritable,DoubleWritable,NullWrit
         }
     }
     
-    private void writeCenterToCache(String key, Point new_center) throws IOException {
+    private void writeCenterToCache(String key, String value) throws IOException {
         MemcachedClient memcached = new MemcachedClient(
                 new InetSocketAddress("127.0.0.1", 11211));
 
-        memcached.set(key, 0, new_center.toString());
+        memcached.set(key, 0, value);
         memcached.shutdown(5, TimeUnit.SECONDS);
     }
 
@@ -121,15 +102,12 @@ public class TestReducer implements Reducer<LongWritable,DoubleWritable,NullWrit
     public void configure(JobConf job) {
         this.job = job;
         this.gmeans_iteration = job.getInt("gmeans_iteration", 0);
-        this.kmeans_iterations = job.getInt("kmeans_iterations", 0);
         
         try {
             readCentersFromCache();
         } catch (IOException ex) {
-            Logger.getLogger(Perform2MeansMapper.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(TestReducer.class.getName()).log(Level.SEVERE, null, ex);
         }
-        
-        
     }
     
     private void readCentersFromCache() throws IOException {
@@ -138,17 +116,16 @@ public class TestReducer implements Reducer<LongWritable,DoubleWritable,NullWrit
         
         int number_centers = (int) Math.pow(2, gmeans_iteration);
         
-        String key = "";
-        
-        // Prefix for kmeans iteration 1
-        String  prefix = "IT-" + gmeans_iteration + "_2MEANS_" + (kmeans_iterations - 1) + "_";
-        
+        String prefix = "IT-" + gmeans_iteration + "_CENTER-";
+        String key;
         Object value;
+        
         centers = new Point[number_centers];
         for (int i = 0; i < number_centers; i++) {
             key = prefix + i;
             value = memcached.get(key);
-            if (value != null) {
+            Logger.getLogger(this.getClass().getName()).log(Level.INFO, key + " : " + value);
+            if (value != null && value != "") {
                 centers[i] = Point.parse((String) value);
             }
         }
@@ -158,9 +135,6 @@ public class TestReducer implements Reducer<LongWritable,DoubleWritable,NullWrit
 
     @Override
     public void close() throws IOException {
-        
-        
-        
     }
     
 }

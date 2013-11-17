@@ -3,7 +3,9 @@
  *     /path/to/hadoop-clustering.jar
  *     gmeans.Main 
  *     -libjars /home/tibo/Java/spymemcached-2.9.1.jar,/home/tibo/Java/commons-math3-3.2/commons-math3-3.2.jar
- *     /dataset_400_k4_d3.csv
+ *     input
+ *     output
+ *     max iterations
  */
 
 package gmeans;
@@ -26,8 +28,8 @@ public class Main extends Configured implements Tool{
 
     @Override
     public int run(String[] args) {
-        if (args.length != 4) {
-            System.out.println("Usage: gmeans.Main <input path> <output path> <kmeans iterations> <max gmeans iterations>");
+        if (args.length != 3) {
+            System.out.println("Usage: gmeans.Main <input path> <output path> <max gmeans iterations>");
             return 1;
         }
         
@@ -35,8 +37,7 @@ public class Main extends Configured implements Tool{
         Gmeans gmeans = new Gmeans(getConf());
         gmeans.input_path = args[0];
         gmeans.output_path = args[1];
-        gmeans.kmeans_iterations = Integer.valueOf(args[2]);
-        gmeans.max_iterations = Integer.valueOf(args[3]);
+        gmeans.max_iterations = Integer.valueOf(args[2]);
         
         gmeans.run();
         

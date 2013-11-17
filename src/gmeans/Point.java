@@ -9,23 +9,11 @@ import java.io.IOException;
  * @author tibo
  */
 public class Point extends kmeans.Point {
-    public long center_id = 0;
-
-    @Override
-    public void write(DataOutput out) throws IOException {
-        super.write(out);
-        out.writeLong(center_id);
-    }
-
-    @Override
-    public void readFields(DataInput in) throws IOException {
-        super.readFields(in);
-        center_id = in.readLong();
-    }
+    public boolean found = false;
 
     @Override
     public String toString() {
-        return super.toString() + DELIMITER + center_id;
+        return super.toString() + DELIMITER + found;
     }
     
     /* Static String parser */
@@ -43,7 +31,7 @@ public class Point extends kmeans.Point {
         
         if (array_string.length == (DIM + 1)) {
             // Center id is written in the string...
-            point.center_id = Long.valueOf(array_string[DIM]);
+            point.found = Boolean.valueOf(array_string[DIM]);
         }
         
         return point;

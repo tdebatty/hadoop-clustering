@@ -21,7 +21,6 @@ import org.apache.hadoop.mapred.Reporter;
 public class TestMapper implements Mapper<LongWritable, Text, LongWritable, DoubleWritable>{
     private JobConf job;
     private int gmeans_iteration;
-    private int kmeans_iterations;
     private Point[] centers;
     private ArrayRealVector[] vectors;
 
@@ -32,15 +31,42 @@ public class TestMapper implements Mapper<LongWritable, Text, LongWritable, Doub
             OutputCollector<LongWritable, DoubleWritable> collector,
             Reporter reporter) throws IOException {
         
+        
+        int number_vectors = (int) Math.pow(2, gmeans_iteration - 1);
+        
         Point point = Point.parse(value.toString());
+        
+        // Find shortest center
+        double distance = 0;
+        double shortest_distance = Double.POSITIVE_INFINITY;
+        int shortest = 0;
+        
+        for (int i = 0; i < centers.length; i++) {
+            if (centers[i] == null) {
+                continue;
+            }
+            
+            distance = point.distance(centers[i]);
+            if (distance < shortest_distance) {
+                shortest_distance = distance;
+                shortest = i;
+            }
+        }
+        
+        if (shortest >= number_vectors) {
+            shortest -= number_vectors;
+        }
+        
+        // Make a vector from the point
         ArrayRealVector point_vector = new ArrayRealVector(point.value);
         
-        ArrayRealVector vector = vectors[(int) point.center_id];
+        // Fetch the corresponding "2-centers" vector
+        ArrayRealVector vector = vectors[shortest];
         
         double projection = vector.dotProduct(point_vector);
         projection = projection / vector.getNorm();
         
-        collector.collect(new LongWritable(point.center_id), new DoubleWritable(projection));
+        collector.collect(new LongWritable(shortest), new DoubleWritable(projection));
         
     }
 
@@ -48,12 +74,11 @@ public class TestMapper implements Mapper<LongWritable, Text, LongWritable, Doub
     public void configure(JobConf job) {
         this.job = job;
         this.gmeans_iteration = job.getInt("gmeans_iteration", 0);
-        this.kmeans_iterations = job.getInt("kmeans_iterations", 0);
         
         try {
             readCentersFromCache();
         } catch (IOException ex) {
-            Logger.getLogger(Perform2MeansMapper.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(TestMapper.class.getName()).log(Level.SEVERE, null, ex);
         }
         
         computeVectors();
@@ -70,20 +95,18 @@ public class TestMapper implements Mapper<LongWritable, Text, LongWritable, Doub
         
         int number_centers = (int) Math.pow(2, gmeans_iteration);
         
-        String key = "";
-        
-        // Prefix for last kmeans iteration
-        String  prefix = "IT-" + gmeans_iteration + "_2MEANS_" + kmeans_iterations + "_";
-        
+        String prefix = "IT-" + gmeans_iteration + "_CENTER-";
+        String key;
         Object value;
+        
         centers = new Point[number_centers];
         for (int i = 0; i < number_centers; i++) {
             key = prefix + i;
             value = memcached.get(key);
-            if (value != null) {
+            Logger.getLogger(this.getClass().getName()).log(Level.INFO, key + " : " + value);
+            if (value != null && value != "") {
                 centers[i] = Point.parse((String) value);
             }
-            Logger.getLogger(TestMapper.class.getName()).log(Level.INFO, "Found " + key + " : " + value);
         }
 
         memcached.shutdown();
@@ -93,12 +116,12 @@ public class TestMapper implements Mapper<LongWritable, Text, LongWritable, Doub
         int number_vectors = (int) Math.pow(2, gmeans_iteration - 1);
         vectors = new ArrayRealVector[number_vectors];
         for (int i=0; i<number_vectors; i++) {
-            if (centers[i] == null) {
+            if (centers[i] == null || centers[i].found) {
                 continue;
             }
             
             ArrayRealVector v1 = new ArrayRealVector(centers[i].value);
-            ArrayRealVector v2 = new ArrayRealVector(centers[i + (int) Math.pow(2, gmeans_iteration - 1)].value);
+            ArrayRealVector v2 = new ArrayRealVector(centers[i + number_vectors].value);
             vectors[i] = v1.subtract(v2);
             
             Logger.getLogger(TestMapper.class.getName()).log(Level.INFO, "Vector computed : " + vectors[i].toString());

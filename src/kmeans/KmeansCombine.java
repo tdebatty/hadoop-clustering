@@ -14,7 +14,7 @@ import org.apache.hadoop.mapred.Reporter;
  */
 public class KmeansCombine implements Reducer<LongWritable, Point, LongWritable, Point> {
 
-    protected JobConf job;
+    private JobConf job;
     private int iteration;
     private int k;
 
