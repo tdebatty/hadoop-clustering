@@ -101,7 +101,8 @@ public class Kmeans  {
                     new InetSocketAddress("127.0.0.1", 11211));
  
         for (int i = 0; i < this.k; i++) {
-            Point point = Point.parse(br.readLine());
+            Point point = new Point();
+            point.parse(br.readLine());
             //System.out.println(point);
             memcached.set("center_0_" + i, 0, point.toString());
         }

@@ -27,41 +27,47 @@ public class Gmeans  {
     public String input_path = "";
     public String output_path = "/gmeans/";
     public int max_iterations = 10;
+    // should be 95% of the total reduce task capacity
+    public int num_reduce_tasks = 2;
     
     protected Configuration conf;
-    protected int gmeans_iteration = 0;
+    protected int gmeans_iteration = 1;
+    
+    protected MemcachedClient memcached;
 
     Gmeans(Configuration conf) {
         this.conf = conf;
     }
     
     public int run() {
-        System.out.println("Gmeans clustering");
+        System.out.println("G-means clustering");
         System.out.println("Input path: " + input_path);
         System.out.println("Output path:" + output_path);
+        
+        try {
+            memcached = new MemcachedClient(new InetSocketAddress("127.0.0.1", 11211));
+        } catch (IOException ex) {
+            Logger.getLogger(Gmeans.class.getName()).log(Level.SEVERE, null, ex);
+            System.out.println("Could not connect to Memcached server!");
+            return 1;
+        }
         
         long start = System.currentTimeMillis();
         
         try {
-            Write2CentersToCache();
+            PickInitialCenters();
         } catch (IOException ex) {
             Logger.getLogger(Gmeans.class.getName()).log(Level.SEVERE, null, ex);
             return 1;
         }
         
-        while (true) {
-            gmeans_iteration++;
-            
+        while (ClusteringNotCompleted()) {
             try {
-                Perform2Means();
-                Perform2Means();
-                Perform2Means();
-                Perform2MeansAndFind2Centers();
-                TestNewCenters();
-                
-                if (ClusteringCompleted()) {
-                    break;
-                }
+                //KMeans();
+                //KMeans();
+                KMeans();
+                KMeansAndFindNewCenters();
+                TestClusters();
                 
             } catch (IOException ex) {
                 Logger.getLogger(Gmeans.class.getName()).log(Level.SEVERE, null, ex);
@@ -72,15 +78,19 @@ public class Gmeans  {
                 System.out.println("Max iterations count reached...");
                 return 1;
             }
+            
+            gmeans_iteration++;
         }
         
         long end = System.currentTimeMillis();
         System.out.println("Clustering completed!! :-)");
         System.out.println("Execution time: " + (end - start) + " ms");
+        
+        memcached.shutdown(5, TimeUnit.SECONDS);
         return 0;
     }
     
-    private void Write2CentersToCache() throws IOException {
+    private void PickInitialCenters() throws IOException {
         JobConf job = new JobConf(conf);
 
         FileSystem fs = FileSystem.get(job);
@@ -94,23 +104,45 @@ public class Gmeans  {
         InputStream in = fs.open(new Path(input_file));
         BufferedReader br = new BufferedReader(new InputStreamReader(in));
 
-        MemcachedClient memcached = new MemcachedClient(
-                    new InetSocketAddress("127.0.0.1", 11211));
  
         for (int i = 0; i < 2; i++) {
-            Point point = Point.parse(br.readLine());
-            //System.out.println(point);
+            Point point = new Point();
+            point.parse(br.readLine());
             memcached.set("IT-1_CENTER-" + i, 0, point.toString());
         }
-
-        memcached.shutdown(5, TimeUnit.SECONDS);
     }
     
-    private void Perform2MeansAndFind2Centers() throws IOException {
+    private void KMeans() throws IOException {
         // Create a JobConf using the conf processed by ToolRunner
         JobConf job = new JobConf(conf, getClass());
-        job.setJobName("Gmeans : " + gmeans_iteration + " : 2Means & Find2Centers");
-        System.out.println("Gmeans : " + gmeans_iteration + " : 2Means & Find2Centers");
+        job.setJobName("Gmeans : " + gmeans_iteration + " : KMeans");
+        System.out.println("Gmeans : " + gmeans_iteration + " : KMeans");
+
+        FileInputFormat.setInputPaths(job, new Path(this.input_path));
+        job.setInputFormat(TextInputFormat.class);
+
+        job.setMapperClass(KMeansMapper.class);
+        job.setMapOutputKeyClass(LongWritable.class);
+        job.setMapOutputValueClass(Point.class);
+
+        job.setCombinerClass(KMeansCombiner.class);
+
+        job.setReducerClass(KMeansReducer.class);
+        job.setOutputKeyClass(NullWritable.class);
+        job.setOutputValueClass(NullWritable.class);
+        job.setOutputFormat(NullOutputFormat.class);
+
+        job.setInt("gmeans_iteration", gmeans_iteration);
+        job.setNumReduceTasks(num_reduce_tasks);
+
+        JobClient.runJob(job);
+    }
+    
+    private void KMeansAndFindNewCenters() throws IOException {
+        // Create a JobConf using the conf processed by ToolRunner
+        JobConf job = new JobConf(conf, getClass());
+        job.setJobName("Gmeans : " + gmeans_iteration + " : KMeans & Find New Centers");
+        System.out.println("Gmeans : " + gmeans_iteration + " : KMeans & Find New Centers");
 
         FileInputFormat.setInputPaths(job, new Path(this.input_path));
         job.setInputFormat(TextInputFormat.class);
@@ -120,7 +152,7 @@ public class Gmeans  {
          * output: center_id => coordinates, 1 (Point implements writable)
          * classical k-means mapper : assign point to most close center
          */
-        job.setMapperClass(Perform2MeansAndFind2CentersMapper.class);
+        job.setMapperClass(KMeansAndFindNewCentersMapper.class);
         job.setMapOutputKeyClass(LongWritable.class);
         job.setMapOutputValueClass(Point.class);
 
@@ -131,7 +163,7 @@ public class Gmeans  {
          * center_id + OFFSET : coordinates, 1 // coordinates of first point in this cluster
          * center_id + OFFSET : coordinates, 1 // coordinates of second point in this cluster
          */
-        //job.setCombinerClass(Perform2MeansAndFind2CentersCombiner.class);
+        job.setCombinerClass(KMeansAndFindNewCentersCombiner.class);
 
         /* REDUCER
          * input: center_id, <coordinates, count>
@@ -141,17 +173,18 @@ public class Gmeans  {
          * else : write 2 new centers to cache for next iteration
          * 
          */
-        job.setReducerClass(Perform2MeansAndFind2CentersReducer.class);
+        job.setReducerClass(KMeansAndFindNewCentersReducer.class);
         job.setOutputKeyClass(NullWritable.class);
         job.setOutputValueClass(NullWritable.class);
         job.setOutputFormat(NullOutputFormat.class);
 
         job.setInt("gmeans_iteration", gmeans_iteration);
-
+        job.setNumReduceTasks(num_reduce_tasks);
+        
         JobClient.runJob(job);
     }
      
-    private void TestNewCenters() throws IOException {
+    private void TestClusters() throws IOException {
         JobConf job = new JobConf(conf, getClass());
         job.setJobName("Gmeans : " + gmeans_iteration + " : Test");
         System.out.println("Gmeans : " + gmeans_iteration + " : Test");
@@ -159,11 +192,26 @@ public class Gmeans  {
         FileInputFormat.setInputPaths(job, new Path(this.input_path));
         job.setInputFormat(TextInputFormat.class);
 
-        job.setMapperClass(TestMapper.class);
-        job.setMapOutputKeyClass(LongWritable.class); // center id
-        job.setMapOutputValueClass(DoubleWritable.class);
-
-        job.setReducerClass(TestReducer.class);
+        
+        
+        int num_clusters = (int) Math.pow(2, gmeans_iteration - 1);
+        if (num_clusters < num_reduce_tasks) {
+            System.out.println("Only " + num_clusters + " clusters to test : using alternative mode...");
+            job.setMapperClass(TestFewClustersMapper.class);
+            job.setMapOutputKeyClass(LongWritable.class); // center id
+            job.setMapOutputValueClass(DoubleWritable.class);
+            
+            job.setReducerClass(TestFewClustersReducer.class);
+            job.setNumReduceTasks(num_clusters);
+            
+        } else {
+            job.setMapperClass(TestMapper.class);
+            job.setMapOutputKeyClass(LongWritable.class); // center id
+            job.setMapOutputValueClass(DoubleWritable.class);
+            job.setReducerClass(TestReducer.class);
+            job.setNumReduceTasks(num_reduce_tasks);
+        }
+        
         job.setOutputKeyClass(NullWritable.class);
         job.setOutputValueClass(NullWritable.class);
         job.setOutputFormat(NullOutputFormat.class);
@@ -174,69 +222,35 @@ public class Gmeans  {
 
     }
 
-    private boolean ClusteringCompleted() throws IOException {
-        return false;
-        /*
-        int max_centers = (int) Math.pow(2, gmeans_iteration);
-        MemcachedClient memcached = new MemcachedClient(
-                new InetSocketAddress("127.0.0.1", 11211));
+    private boolean ClusteringNotCompleted() {
 
-        String prefix = "IT-" + gmeans_iteration + "_TEST_";
+        int max_centers = (int) Math.pow(2, gmeans_iteration);
+
+        String prefix = "IT-" + gmeans_iteration + "_CENTER-";
         for (int i = 0; i<max_centers; i++) {
             String key = prefix + i;
-            if (memcached.get(key) != null) {
-                memcached.shutdown();
-                return false;
+            Object value = memcached.get(key);
+            if (value == null) {
+                continue;
+            }
+            
+            String value_s = (String) value;
+            if ("".equals(value_s)) {
+                continue;
+            }
+            
+            Point point = new Point();
+            point.parse(value_s);
+            if (point.found) {
+                // Propagate this point for next iteration...
+                // (it won't be overwritten by KMeans&FindNewCenters)
+                memcached.set("IT-" + (gmeans_iteration + 1) + "_CENTER-" + i, 0, point.toString());
+
+            } else {
+                return true;
             }
         }
         
-        memcached.shutdown();
-        return true;
-        */
-    }
-
-    private void Perform2Means() throws IOException {
-        // Create a JobConf using the conf processed by ToolRunner
-        JobConf job = new JobConf(conf, getClass());
-        job.setJobName("Gmeans : " + gmeans_iteration + " : 2Means");
-        System.out.println("Gmeans : " + gmeans_iteration + " : 2Means");
-
-        FileInputFormat.setInputPaths(job, new Path(this.input_path));
-        job.setInputFormat(TextInputFormat.class);
-
-        /* MAPPER
-         * input: Text
-         * output: center_id => coordinates, 1 (Point implements writable)
-         * classical k-means mapper : assign point to most close center
-         */
-        job.setMapperClass(Perform2MeansMapper.class);
-        job.setMapOutputKeyClass(LongWritable.class);
-        job.setMapOutputValueClass(Point.class);
-
-        /* COMBINER
-         * input: center_id => <coordinates, 1>
-         * output:
-         * center_id => coordinates, count     // partial center for k-means
-         * center_id + OFFSET : coordinates, 1 // coordinates of first point in this cluster
-         * center_id + OFFSET : coordinates, 1 // coordinates of second point in this cluster
-         */
-        //job.setCombinerClass(Perform2MeansAndFind2CentersCombiner.class);
-
-        /* REDUCER
-         * input: center_id, <coordinates, count>
-         * output: nothing, centers will go to distributed cache
-         * 
-         * if center_id < OFFSET : reduce center and write to cache
-         * else : write 2 new centers to cache for next iteration
-         * 
-         */
-        job.setReducerClass(Perform2MeansReducer.class);
-        job.setOutputKeyClass(NullWritable.class);
-        job.setOutputValueClass(NullWritable.class);
-        job.setOutputFormat(NullOutputFormat.class);
-
-        job.setInt("gmeans_iteration", gmeans_iteration);
-
-        JobClient.runJob(job);
+        return false;
     }
 }

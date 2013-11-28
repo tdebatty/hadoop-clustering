@@ -26,7 +26,8 @@ public class KmeansMap implements Mapper<LongWritable, Text, LongWritable, Point
             OutputCollector<LongWritable, Point> output,
             Reporter reporter) throws IOException {
 
-        Point point = Point.parse(value.toString());
+        Point point = new Point();
+        point.parse(value.toString());
 
         double distance = 0;
         double shortest_distance = Double.POSITIVE_INFINITY;
@@ -70,7 +71,8 @@ public class KmeansMap implements Mapper<LongWritable, Text, LongWritable, Point
         centers = new Point[k];
         for (int i = 0; i < k; i++) {
             mc_key = "center_" + iteration + "_" + i;
-            centers[i] = Point.parse((String) memcached.get(mc_key));
+            centers[i] = new Point();
+            centers[i].parse((String) memcached.get(mc_key));
         }
 
         memcached.shutdown();

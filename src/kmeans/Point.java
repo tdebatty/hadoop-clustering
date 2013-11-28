@@ -13,8 +13,18 @@ public class Point implements Writable {
     public static int DIM = 3;
     public static String DELIMITER = ";";
     
-    public long count = 0L;
-    public double[] value = new double[DIM];
+    public long count;
+    public double[] value;
+    
+    public Point() {
+        init();
+    }
+    
+    public final void init() {
+        count = 0L;
+        value = new double[DIM];
+    }
+    
 
     /* WRITABLE interface */
     @Override
@@ -56,7 +66,7 @@ public class Point implements Writable {
 
     public void addPoint(Point other) {
         for (int i = 0; i < DIM; i++) {
-            value[i] += other.value[i];
+            value[i] += other.value[i] * other.count;
         }
 
         count+= other.count; // if a combiner is used...
@@ -68,21 +78,23 @@ public class Point implements Writable {
 
         }
 
-        count = 1;
+        //count = 1;
     }
     
     /* Static String parser */
-    public static Point parse(String string) {
+    public void parse(String string) {
         String[] array_string = string.split(DELIMITER);
-        double[] array_double = new double[array_string.length];
+        parse(array_string);
+    }
+    
+    protected void parse(String[] array_string) {
+        double[] array_double = new double[DIM];
         
         for (int i = 0; i < DIM; i++) {
             array_double[i] = Double.valueOf(array_string[i]);
         }
-
-        Point point = new Point();
-        point.value = array_double;
-        point.count = 1;
-        return point;
+        
+        value = array_double;
+        count = 1;
     }
 }

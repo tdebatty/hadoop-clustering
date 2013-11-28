@@ -1,9 +1,7 @@
 package gmeans;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Iterator;
-import org.apache.commons.math3.stat.StatUtils;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -16,7 +14,7 @@ import org.apache.hadoop.mapred.Reporter;
  *
  * @author tibo
  */
-public class TestReducer 
+public class TestFewClustersReducer 
         extends MapReduceBase
         implements Reducer<LongWritable,DoubleWritable,NullWritable,NullWritable>{
 
@@ -26,27 +24,20 @@ public class TestReducer
     @Override
     public void reduce(
             LongWritable center_id,
-            Iterator<DoubleWritable> list_of_projections,
+            Iterator<DoubleWritable> list_of_a2star,
             OutputCollector<NullWritable, NullWritable> collector, 
             Reporter reporter) throws IOException {
         
-        ArrayList<Double> arraylist = new ArrayList<>();
-        while (list_of_projections.hasNext()) {
-            arraylist.add(list_of_projections.next().get());
+        double a2star_total = 0;
+        int a2star_count = 0;
+        while (list_of_a2star.hasNext()) {
+            a2star_total += list_of_a2star.next().get();
+            a2star_count++;
         }
         
+        double a2star_average = a2star_total / a2star_count;
         
-        // because arraylist.toArray() returns a Double[] and not a double[] :-(
-        double[] values = new double[arraylist.size()];
-        String values_string = "";
-        for (int i=0; i< arraylist.size(); i++) {
-            values[i] = (double) arraylist.get(i);
-            values_string += values[i] + ", ";
-        }
-        
-        values = StatUtils.normalize(values);
-        
-        if (adtest(values)) {
+        if (a2star_average < CRITICAL) {
             // values seem to follow a normal law
             // remove 2 new centers
             // keep single old center, and mark as found!
@@ -65,6 +56,7 @@ public class TestReducer
             CacheWrite("IT-" + (gmeans_iteration + 1) + "_CENTER-" + (center_id.get() + 3 * (int) Math.pow(2, gmeans_iteration - 1)), "");
             
         } else {
+            
         }
         
         
