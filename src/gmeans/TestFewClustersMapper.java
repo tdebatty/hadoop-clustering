@@ -105,7 +105,10 @@ public class TestFewClustersMapper
                 continue;
             }
             
-            // TODO : add a minimal threshold!
+            if (projections[vectorid].size() < 8) {
+                // Not enough elements to perform a test
+                continue;
+            }
             
             double[] values = new double[projections[vectorid].size()];
             for (int i=0; i < projections[vectorid].size(); i++) {

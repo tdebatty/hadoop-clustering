@@ -1,39 +1,52 @@
-package kmeans;
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package multikmeans;
 
-
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import kmeans.Point;
 import net.spy.memcached.MemcachedClient;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.*;
-import org.apache.hadoop.mapred.*;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapred.FileInputFormat;
+import org.apache.hadoop.mapred.JobClient;
+import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.TextInputFormat;
 import org.apache.hadoop.mapred.lib.NullOutputFormat;
 
 /**
  *
  * @author tibo
  */
-public class Kmeans  {
+public class MultiKmeans {
     public int iterations = 5;
-    public int k = 10;
+    public int k_min = 1;
+    public int k_max = 20;
+    public int k_step = 1;
     public String input_path = "";
     
     protected Configuration conf;
 
-    Kmeans(Configuration conf) {
+    MultiKmeans(Configuration conf) {
         this.conf = conf;
     }
     
     public int run() {
-        System.out.println("Kmeans clustering");
+        System.out.println("MultiKmeans clustering");
         System.out.println("Iterations: " + iterations);
-        System.out.println("K:          " + k);
         System.out.println("Input path: " + input_path);
         
         long start = System.currentTimeMillis();
@@ -41,38 +54,41 @@ public class Kmeans  {
         try {
             writeInitialCentersToCache();
         } catch (IOException ex) {
-            Logger.getLogger(Kmeans.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex);
             return 1;
         }
+        
         
         for (int i=0; i < iterations; i++) {
 
             // Create a JobConf using the conf processed by ToolRunner
             JobConf job = new JobConf(conf, getClass());
-            job.setJobName("Kmeans : " + i);
+            job.setJobName("MultiKmeans : " + i);
+            System.out.println("MultiKmeans : " + i);
             
             FileInputFormat.setInputPaths(job, new Path(input_path));
             job.setInputFormat(TextInputFormat.class);
 
-            job.setMapperClass(KmeansMap.class);
-            job.setMapOutputKeyClass(LongWritable.class); // center id
+            job.setMapperClass(MultiKmeansMapper.class);
+            job.setMapOutputKeyClass(Text.class); // k_centerid
             job.setMapOutputValueClass(Point.class);
             
-            job.setCombinerClass(KmeansCombine.class);
+            //job.setCombinerClass(MultiKmeansCombiner.class);
             
-            job.setReducerClass(KmeansReduce.class);
+            job.setReducerClass(MultiKmeansReducer.class);
             // Nothing to write : centers will go to cache
             job.setOutputKeyClass(NullWritable.class);
             job.setOutputValueClass(NullWritable.class);
             job.setOutputFormat(NullOutputFormat.class);
                 
-            job.setInt("iteration", i);
-            job.setInt("k", k);
+            job.setInt("k_min", k_min);
+            job.setInt("k_max", k_max);
+            job.setInt("k_step", k_step);
             
             try {
                 JobClient.runJob(job);
             } catch (IOException ex) {
-                Logger.getLogger(Kmeans.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex);
                 return 1;
             }
         }
@@ -92,6 +108,7 @@ public class Kmeans  {
         
         String input_file = input_path;
         if (fstatus.isDir()) {
+            // TODO : fetch first file
             input_file = input_path + "/part-00000";
         }
         InputStream in = fs.open(new Path(input_file));
@@ -100,11 +117,14 @@ public class Kmeans  {
         MemcachedClient memcached = new MemcachedClient(
                     new InetSocketAddress("127.0.0.1", 11211));
  
-        for (int i = 0; i < this.k; i++) {
-            Point point = new Point();
-            point.parse(br.readLine());
-            //System.out.println(point);
-            memcached.set("center_0_" + i, 0, point.toString());
+        Point point = new Point();
+        for (int k = k_min; k <= k_max; k += k_step) {
+            for (int i = 0; i < k; i++) {
+                
+                point.parse(br.readLine());
+                //System.out.println(point);
+                memcached.set(k + "_" + i, 0, point.toString());
+            }
         }
 
         memcached.shutdown(5, TimeUnit.SECONDS);
