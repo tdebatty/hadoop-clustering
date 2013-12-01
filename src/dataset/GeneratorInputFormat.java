@@ -5,6 +5,7 @@
 package dataset;
 
 import java.io.IOException;
+import java.util.Random;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.JobConf;
@@ -19,16 +20,12 @@ import org.apache.hadoop.mapred.RecordReader;
  */
 
 public class GeneratorInputFormat implements InputFormat<NullWritable, Text> {
-    public static final float SEPARATION_MEDIUM = 2.0f;
-    
     public static final String DIMENSIONALITY = "dataset.generator.dimensionality";
     public static final String NUM_CENTERS = "dataset.generator.centers";
-    public static final String SEPARATION = "dataset.generator.separation";
     public static final String NUM_POINTS = "dataset.generator.points";
-    public static final String POINTS_PER_TASK = "dataset.generator.points.per.task";
     
-    
-    public static final String CENTERS = "dataset.generator.centers.value";
+    public static final String POINTS_PER_SPLIT = "dataset.generator.points.per.split";
+    public static final String CENTERS = "dataset.generator.centers";
 
     static void setDimensionality(JobConf job, int dim) {
         job.setInt(DIMENSIONALITY, dim);
@@ -38,38 +35,35 @@ public class GeneratorInputFormat implements InputFormat<NullWritable, Text> {
         job.setInt(NUM_CENTERS, num_centers);
     }
 
-    static void setSeparation(JobConf job, float separation) {
-        job.setFloat(SEPARATION, separation);
-    }
-
     static void setNumPoints(JobConf job, int num_points) {
         job.setInt(NUM_POINTS, num_points);
     }
     
     
-    private JobConf job;
-    private Center[] centers;
-    private int num_centers;
-    private int dim;
-    
 
     @Override
     public InputSplit[] getSplits(JobConf job, int numSplits) throws IOException {
-        this.job = job;
-        this.num_centers = job.getInt(NUM_CENTERS, -1);
-        this.dim = job.getInt(DIMENSIONALITY, -1);
-        job.setInt(POINTS_PER_TASK, job.getInt(NUM_POINTS, -1) / numSplits);
         
-        ComputeCenters();
-        //ComputeDistances();
-        //ComputeStdDevs();
-        ComputeWeights();
-        SerializeCenters();
+        int num_centers = job.getInt(NUM_CENTERS, -1);
+        int dim = job.getInt(DIMENSIONALITY, -1);
+        
+        Center[] centers = GenCenters(dim, num_centers);
+        
+        System.out.println("Generated centers:");
+        for (int i = 0; i < num_centers; i++) {
+            System.out.println(centers[i]);
+        }
+        
+        String centers_string = Center.serializeArray(centers);
+        job.set(CENTERS, centers_string);
+        job.setInt(POINTS_PER_SPLIT, job.getInt(NUM_POINTS, -1) / numSplits);
         
         InputSplit[] splits = new InputSplit[numSplits];
         for (int i = 0; i < numSplits; i++) {
             splits[i] = new FakeInputSplit();
         }
+        
+        System.out.println("getSplits terminated...");
         return splits;
     }
 
@@ -78,41 +72,32 @@ public class GeneratorInputFormat implements InputFormat<NullWritable, Text> {
         return new GeneratorRecordReader(job);
     }
 
-    private void ComputeCenters() {
-        
-        centers = new Center[num_centers];
+    private Center[] GenCenters(int dim, int num_centers) {
+        Random r = new Random();
+        Center[] centers = new Center[num_centers];
         
         for (int i = 0; i < num_centers; i++) {
             Center center = new Center();
+            
+            // Value
             center.value = new double[dim];
             for (int j = 0; j < dim; j++) {
-                center.value[j] = i;
+                center.value[j] = r.nextDouble() * 1000; // 0 .. 1000
             }
+            
+            // Std Dev
+            center.stdDev = new double[dim];
+            for (int j = 0; j < dim; j++) {
+                center.stdDev[j] = r.nextDouble() * 10; // 0 .. 10
+            }
+            
+            // Weight
+            center.weight = r.nextInt(10) + 1; // 1 .. 10
+            
             centers[i] = center;
         }
+        return centers;
         
-    }
-
-    private void ComputeDistances() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    private void ComputeStdDevs() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    private void ComputeWeights() {
-        for (int i = 0; i < num_centers; i++) {
-            centers[i].weight = i;
-        }
-    }
-
-    private void SerializeCenters() {
-        String r = centers[0].toString();
-        for (int i = 1; i < centers.length; i++) {
-            r += ":" + centers[i].toString();
-        }
-        job.set(CENTERS, r);
     }
     
 }

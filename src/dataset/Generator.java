@@ -1,7 +1,3 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package dataset;
 
 import java.io.IOException;
@@ -40,13 +36,12 @@ class Generator {
         job.setInputFormat(GeneratorInputFormat.class);
         GeneratorInputFormat.setDimensionality(job, dim);
         GeneratorInputFormat.setNumCenters(job, num_centers);
-        GeneratorInputFormat.setSeparation(job, GeneratorInputFormat.SEPARATION_MEDIUM);
         GeneratorInputFormat.setNumPoints(job, num_points);
         
 
-        // No Mapper and no reducer
+        // No mapper & no reducer
+        // => Direct write to disk
         job.setNumReduceTasks(0);
-
         job.setOutputKeyClass(NullWritable.class);
         job.setOutputValueClass(Text.class);
         job.setOutputFormat(TextOutputFormat.class);

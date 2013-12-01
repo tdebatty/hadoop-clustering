@@ -1,16 +1,10 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package dataset;
 
 import java.io.IOException;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapred.InputSplit;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.RecordReader;
-import org.apache.hadoop.mapred.Reporter;
 
 /**
  *
@@ -22,8 +16,8 @@ class GeneratorRecordReader implements RecordReader<NullWritable, Text>{
     private final Center[] centers;
 
     GeneratorRecordReader(JobConf job) {
-        this.points_per_task = job.getInt(GeneratorInputFormat.POINTS_PER_TASK, -1);
-        this.centers = Center.parseAll(job.get(GeneratorInputFormat.CENTERS));
+        this.points_per_task = job.getInt(GeneratorInputFormat.POINTS_PER_SPLIT, -1);
+        this.centers = Center.parseArray(job.get(GeneratorInputFormat.CENTERS));
         
     }
 
