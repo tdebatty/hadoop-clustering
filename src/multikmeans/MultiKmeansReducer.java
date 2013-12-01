@@ -32,7 +32,7 @@ public class MultiKmeansReducer
         }
         new_center.reduce();
         
-        CacheWrite(key.toString(), new_center.toString());
+        CacheWrite((iteration+1) + "_" + key.toString(), new_center.toString());
         
     }
     

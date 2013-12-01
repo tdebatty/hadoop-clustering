@@ -1,7 +1,3 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package multikmeans;
 
 import java.io.BufferedReader;
@@ -18,7 +14,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.FileInputFormat;
@@ -39,6 +34,7 @@ public class MultiKmeans {
     public String input_path = "";
     
     protected Configuration conf;
+    protected int iteration;
 
     MultiKmeans(Configuration conf) {
         this.conf = conf;
@@ -52,19 +48,19 @@ public class MultiKmeans {
         long start = System.currentTimeMillis();
         
         try {
-            writeInitialCentersToCache();
+            PickInitialCenters();
         } catch (IOException ex) {
             Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex);
             return 1;
         }
         
         
-        for (int i=0; i < iterations; i++) {
+        for (iteration=0; iteration < iterations; iteration++) {
 
             // Create a JobConf using the conf processed by ToolRunner
             JobConf job = new JobConf(conf, getClass());
-            job.setJobName("MultiKmeans : " + i);
-            System.out.println("MultiKmeans : " + i);
+            job.setJobName("MultiKmeans : " + iteration);
+            System.out.println("MultiKmeans : " + iteration);
             
             FileInputFormat.setInputPaths(job, new Path(input_path));
             job.setInputFormat(TextInputFormat.class);
@@ -84,6 +80,7 @@ public class MultiKmeans {
             job.setInt("k_min", k_min);
             job.setInt("k_max", k_max);
             job.setInt("k_step", k_step);
+            job.setInt("iteration", iteration);
             
             try {
                 JobClient.runJob(job);
@@ -100,7 +97,7 @@ public class MultiKmeans {
         return 0;
     }
     
-    protected void writeInitialCentersToCache() throws IOException {
+    private void PickInitialCenters() throws IOException {
         JobConf job = new JobConf(conf);
 
         FileSystem fs = FileSystem.get(job);
@@ -123,7 +120,7 @@ public class MultiKmeans {
                 
                 point.parse(br.readLine());
                 //System.out.println(point);
-                memcached.set(k + "_" + i, 0, point.toString());
+                memcached.set("0_" + k + "_" + i, 0, point.toString());
             }
         }
 

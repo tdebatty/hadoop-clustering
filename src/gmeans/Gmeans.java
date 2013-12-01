@@ -24,6 +24,9 @@ import org.apache.hadoop.mapred.lib.NullOutputFormat;
  * @author tibo
  */
 public class Gmeans  {
+    public static final String CENTER_KEY_FORMAT = "IT-%d_CENTER-%d";
+    
+    
     public String input_path = "";
     public String output_path = "/gmeans/";
     public int max_iterations = 10;
@@ -83,9 +86,11 @@ public class Gmeans  {
         }
         
         long end = System.currentTimeMillis();
-        System.out.println("Clustering completed!! :-)");
+        gmeans_iteration--;
+        System.out.println("Clustering completed after " + gmeans_iteration  + " iterations!! :-)");
         System.out.println("Execution time: " + (end - start) + " ms");
         
+        memcached.set("gmeans_last_iteration", 0, gmeans_iteration);
         memcached.shutdown(5, TimeUnit.SECONDS);
         return 0;
     }

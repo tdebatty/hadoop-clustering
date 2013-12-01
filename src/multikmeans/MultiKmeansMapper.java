@@ -82,7 +82,7 @@ public class MultiKmeansMapper
         
         int k = k_min;
         for (int i = 0; i < k_count; i++) {
-            centers[i] = ReadCenters(k);
+            centers[i] = ReadCenters(iteration, k);
             k += k_step;
         }
         
