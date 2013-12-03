@@ -25,7 +25,7 @@ public class MapReduceBase {
         this.job = job;
                 
         try {
-            memcached = new MemcachedClient(new InetSocketAddress("127.0.0.1", 11211));
+            memcached = new MemcachedClient(new InetSocketAddress("10.67.42.116", 11211));
         } catch (IOException ex) {
             Logger.getLogger(MapReduceBase.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -97,7 +97,7 @@ public class MapReduceBase {
         int num_vectors = centers.length / 2;
         ArrayRealVector[] vectors = new ArrayRealVector[num_vectors];
         for (int i=0; i<num_vectors; i++) {
-            if (centers[i] == null || centers[i].found) {
+            if (centers[i] == null || centers[i + num_vectors] == null || centers[i].found) {
                 continue;
             }
             

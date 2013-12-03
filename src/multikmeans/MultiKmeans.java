@@ -29,9 +29,10 @@ import org.apache.hadoop.mapred.lib.NullOutputFormat;
 public class MultiKmeans {
     public int iterations = 5;
     public int k_min = 1;
-    public int k_max = 20;
+    public int k_max = 200;
     public int k_step = 1;
     public String input_path = "";
+    public int num_reduce_tasks = 48;    
     
     protected Configuration conf;
     protected int iteration;
@@ -76,6 +77,8 @@ public class MultiKmeans {
             job.setOutputKeyClass(NullWritable.class);
             job.setOutputValueClass(NullWritable.class);
             job.setOutputFormat(NullOutputFormat.class);
+            
+            job.setNumReduceTasks(num_reduce_tasks);
                 
             job.setInt("k_min", k_min);
             job.setInt("k_max", k_max);
@@ -112,15 +115,18 @@ public class MultiKmeans {
         BufferedReader br = new BufferedReader(new InputStreamReader(in));
 
         MemcachedClient memcached = new MemcachedClient(
-                    new InetSocketAddress("127.0.0.1", 11211));
+                    new InetSocketAddress("10.67.42.116", 11211));
  
         Point point = new Point();
-        for (int k = k_min; k <= k_max; k += k_step) {
-            for (int i = 0; i < k; i++) {
-                
-                point.parse(br.readLine());
+        int max_num_centers = (k_max - k_min + 1) / k_step;
+        
+        for (int i = 0; i < max_num_centers; i++) {
+            point.parse(br.readLine());
+            for (int k = k_min; k <= k_max; k += k_step) {
                 //System.out.println(point);
-                memcached.set("0_" + k + "_" + i, 0, point.toString());
+                if (i < k) {
+                    memcached.set("0_" + k + "_" + i, 0, point.toString());
+                }
             }
         }
 

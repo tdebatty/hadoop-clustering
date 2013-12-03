@@ -23,7 +23,7 @@ public class MapReduceBase {
         
         iteration = job.getInt("iteration", 0);
         try {
-            memcached = new MemcachedClient(new InetSocketAddress("127.0.0.1", 11211));
+            memcached = new MemcachedClient(new InetSocketAddress("10.67.42.116", 11211));
         } catch (IOException ex) {
             Logger.getLogger(MapReduceBase.class.getName()).log(Level.SEVERE, null, ex);
         }

@@ -35,7 +35,7 @@ public class TestMapper
         
         point.parse(value.toString());
         
-        // Find cluster (neares center)
+        // Find cluster (nearest center)
         double distance = 0;
         double shortest_distance = Double.POSITIVE_INFINITY;
         int shortest = 0;
@@ -61,11 +61,17 @@ public class TestMapper
             return;
         }
         
-        // Make a Math.vector from the point
-        ArrayRealVector point_vector = new ArrayRealVector(point.value);
-        
         // Fetch the corresponding "2-centers" vector
         ArrayRealVector vector = vectors[shortest];
+        
+        // In some cases, it was not possible to build the vector
+        // because one of the 2 centers was missing for example
+        if (vector == null) {
+            return;
+        }
+        
+        // Make a Math.vector from the point
+        ArrayRealVector point_vector = new ArrayRealVector(point.value);
         
         double projection = vector.dotProduct(point_vector);
         dw.set(projection / vector.getNorm());

@@ -49,14 +49,6 @@ public class TestFewClustersReducer
             CacheWrite("IT-" + gmeans_iteration + "_CENTER-" + center_id.get(), center.toString());
             CacheWrite("IT-" + gmeans_iteration + "_CENTER-" + (center_id.get() + (int) Math.pow(2, gmeans_iteration - 1)), "");
             
-            // And correct points for next iteration
-            CacheWrite("IT-" + (gmeans_iteration + 1) + "_CENTER-" + center_id.get(), center.toString());
-            CacheWrite("IT-" + (gmeans_iteration + 1) + "_CENTER-" + (center_id.get() + (int) Math.pow(2, gmeans_iteration - 1)), "");
-            CacheWrite("IT-" + (gmeans_iteration + 1) + "_CENTER-" + (center_id.get() + 2 * (int) Math.pow(2, gmeans_iteration - 1)), "");
-            CacheWrite("IT-" + (gmeans_iteration + 1) + "_CENTER-" + (center_id.get() + 3 * (int) Math.pow(2, gmeans_iteration - 1)), "");
-            
-        } else {
-            
         }
         
         

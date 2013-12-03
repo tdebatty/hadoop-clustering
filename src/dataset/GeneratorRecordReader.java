@@ -36,8 +36,7 @@ class GeneratorRecordReader implements RecordReader<NullWritable, Text>{
         int next_center = current_point % sum_of_weights;
         
         int i = 0;
-        while (next_center > 0) {
-            next_center -= centers[i].weight;
+        while ((next_center -= centers[i].weight) > 0) {
             i++;
         }
         

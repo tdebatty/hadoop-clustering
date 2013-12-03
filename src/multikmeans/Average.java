@@ -31,7 +31,6 @@ import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
 
-
 /**
  *
  * @author tibo
@@ -48,15 +47,15 @@ public class Average extends Configured implements Tool{
     private String input_path;
     private Configuration conf;
     private int k_min = 1;
-    private int k_max = 20;
+    private int k_max = 200;
     private int k_step = 1;
-    private int iterations = 5;
+    private int iterations = 10;
     
 
     @Override
     public int run(String[] args) {
         if (args.length != 1) {
-            System.out.println("Usage: gmeans.Average <input path>");
+            System.out.println("Usage: multikmeans.Average <input path>");
             return 1;
         }
         
@@ -104,7 +103,7 @@ public class Average extends Configured implements Tool{
         MemcachedClient memcached;
         
         try {
-            memcached = new MemcachedClient(new InetSocketAddress("127.0.0.1", 11211));
+            memcached = new MemcachedClient(new InetSocketAddress("10.67.42.116", 11211));
         } catch (IOException ex) {
             Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, ex);
             System.out.println("Could not connect to Memcached server!");
@@ -177,6 +176,8 @@ class AverageMapper
             // Loop on values of k
             int j = 0;
             for (int k = k_min; k <= k_max; k += k_step) {
+                reporter.progress();
+                
                 distance = 0;
                 shortest_distance = Double.POSITIVE_INFINITY;
                 shortest = 0;

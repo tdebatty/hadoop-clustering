@@ -93,7 +93,7 @@ public class Average extends Configured implements Tool{
         MemcachedClient memcached;
         
         try {
-            memcached = new MemcachedClient(new InetSocketAddress("127.0.0.1", 11211));
+            memcached = new MemcachedClient(new InetSocketAddress("10.67.42.116", 11211));
         } catch (IOException ex) {
             Logger.getLogger(Gmeans.class.getName()).log(Level.SEVERE, null, ex);
             System.out.println("Could not connect to Memcached server!");

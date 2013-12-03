@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.stat.StatUtils;
-import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
@@ -75,6 +74,10 @@ public class TestFewClustersMapper
         
         // Fetch the corresponding "2-centers" vector and compute projection
         ArrayRealVector vector = vectors[nearest];
+        if (vector == null) {
+            return;
+        }
+        
         double projection = vector.dotProduct(point_vector) / vector.getNorm();
         
         if (projections[nearest] == null) {

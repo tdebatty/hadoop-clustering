@@ -31,7 +31,7 @@ public class Gmeans  {
     public String output_path = "/gmeans/";
     public int max_iterations = 10;
     // should be 95% of the total reduce task capacity
-    public int num_reduce_tasks = 2;
+    public int num_reduce_tasks = 48;
     
     protected Configuration conf;
     protected int gmeans_iteration = 1;
@@ -48,7 +48,7 @@ public class Gmeans  {
         System.out.println("Output path:" + output_path);
         
         try {
-            memcached = new MemcachedClient(new InetSocketAddress("127.0.0.1", 11211));
+            memcached = new MemcachedClient(new InetSocketAddress("10.67.42.116", 11211));
         } catch (IOException ex) {
             Logger.getLogger(Gmeans.class.getName()).log(Level.SEVERE, null, ex);
             System.out.println("Could not connect to Memcached server!");
@@ -64,7 +64,12 @@ public class Gmeans  {
             return 1;
         }
         
-        while (ClusteringNotCompleted()) {
+        while (!ClusteringCompleted()) {
+            if (gmeans_iteration > max_iterations) {
+                System.out.println("Max iterations count reached...");
+                return 1;
+            }
+            
             try {
                 //KMeans();
                 //KMeans();
@@ -77,10 +82,7 @@ public class Gmeans  {
                 return 1;
             }
 
-            if (gmeans_iteration == max_iterations) {
-                System.out.println("Max iterations count reached...");
-                return 1;
-            }
+            
             
             gmeans_iteration++;
         }
@@ -227,35 +229,50 @@ public class Gmeans  {
 
     }
 
-    private boolean ClusteringNotCompleted() {
+    private boolean ClusteringCompleted() {
+        if (gmeans_iteration == 1) {
+            return false;
+        }
+        
+        boolean clustering_completed = true;
+        int max_centers = (int) Math.pow(2, gmeans_iteration - 1);
+        int found = 0;
 
-        int max_centers = (int) Math.pow(2, gmeans_iteration);
-
-        String prefix = "IT-" + gmeans_iteration + "_CENTER-";
+        String prefix = "IT-" + (gmeans_iteration - 1) + "_CENTER-";
         for (int i = 0; i<max_centers; i++) {
             String key = prefix + i;
             Object value = memcached.get(key);
             if (value == null) {
+                memcached.set("IT-" + (gmeans_iteration) + "_CENTER-" + i, 0, "");
+                memcached.set("IT-" + (gmeans_iteration) + "_CENTER-" + (i + max_centers), 0, "");
                 continue;
             }
             
             String value_s = (String) value;
             if ("".equals(value_s)) {
+                // Propagate empty points
+                memcached.set("IT-" + (gmeans_iteration) + "_CENTER-" + i, 0, "");
+                memcached.set("IT-" + (gmeans_iteration) + "_CENTER-" + (i + max_centers), 0, "");
                 continue;
             }
             
             Point point = new Point();
             point.parse(value_s);
             if (point.found) {
+                found++;
+                
                 // Propagate this point for next iteration...
                 // (it won't be overwritten by KMeans&FindNewCenters)
-                memcached.set("IT-" + (gmeans_iteration + 1) + "_CENTER-" + i, 0, point.toString());
+                memcached.set("IT-" + (gmeans_iteration) + "_CENTER-" + i, 0, point.toString());
+                
+                // And propagate the 2nd corresponding point (that will be left blank)
+                memcached.set("IT-" + (gmeans_iteration) + "_CENTER-" + (i + max_centers), 0, "");
 
             } else {
-                return true;
+                clustering_completed = false;
             }
         }
-        
-        return false;
+        System.out.println("Found " + found + " clusters till now...");
+        return clustering_completed;
     }
 }
