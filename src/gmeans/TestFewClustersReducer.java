@@ -31,7 +31,9 @@ public class TestFewClustersReducer
         double a2star_total = 0;
         int a2star_count = 0;
         while (list_of_a2star.hasNext()) {
-            a2star_total += list_of_a2star.next().get();
+            double a2star = list_of_a2star.next().get();
+            //System.out.println(a2star);
+            a2star_total += a2star;
             a2star_count++;
         }
         

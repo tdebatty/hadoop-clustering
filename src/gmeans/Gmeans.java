@@ -28,15 +28,15 @@ public class Gmeans  {
     
     
     public String input_path = "";
-    public String output_path = "/gmeans/";
     public int max_iterations = 10;
     // should be 95% of the total reduce task capacity
     public int num_reduce_tasks = 48;
+    public String memcached_server = "127.0.0.1";
     
     protected Configuration conf;
     protected int gmeans_iteration = 1;
-    
     protected MemcachedClient memcached;
+    protected long start;
 
     Gmeans(Configuration conf) {
         this.conf = conf;
@@ -45,17 +45,16 @@ public class Gmeans  {
     public int run() {
         System.out.println("G-means clustering");
         System.out.println("Input path: " + input_path);
-        System.out.println("Output path:" + output_path);
+        start = System.currentTimeMillis();
         
         try {
-            memcached = new MemcachedClient(new InetSocketAddress("10.67.42.116", 11211));
+            memcached = new MemcachedClient(new InetSocketAddress(memcached_server, 11211));
         } catch (IOException ex) {
             Logger.getLogger(Gmeans.class.getName()).log(Level.SEVERE, null, ex);
             System.out.println("Could not connect to Memcached server!");
             return 1;
         }
         
-        long start = System.currentTimeMillis();
         
         try {
             PickInitialCenters();
@@ -64,12 +63,14 @@ public class Gmeans  {
             return 1;
         }
         
+        
+        
         while (!ClusteringCompleted()) {
             if (gmeans_iteration > max_iterations) {
                 System.out.println("Max iterations count reached...");
                 return 1;
             }
-            
+        
             try {
                 //KMeans();
                 //KMeans();
@@ -87,10 +88,10 @@ public class Gmeans  {
             gmeans_iteration++;
         }
         
-        long end = System.currentTimeMillis();
+        
         gmeans_iteration--;
         System.out.println("Clustering completed after " + gmeans_iteration  + " iterations!! :-)");
-        System.out.println("Execution time: " + (end - start) + " ms");
+        System.out.println("Total execution time: " + (System.currentTimeMillis() - start) + " ms");
         
         memcached.set("gmeans_last_iteration", 0, gmeans_iteration);
         memcached.shutdown(5, TimeUnit.SECONDS);
@@ -117,6 +118,7 @@ public class Gmeans  {
             point.parse(br.readLine());
             memcached.set("IT-1_CENTER-" + i, 0, point.toString());
         }
+        System.out.println("Execution time (till now): " + (System.currentTimeMillis() - start) + " ms");
     }
     
     private void KMeans() throws IOException {
@@ -140,9 +142,11 @@ public class Gmeans  {
         job.setOutputFormat(NullOutputFormat.class);
 
         job.setInt("gmeans_iteration", gmeans_iteration);
+        job.set("memcached_server", memcached_server);
         job.setNumReduceTasks(num_reduce_tasks);
 
         JobClient.runJob(job);
+        System.out.println("Execution time (till now): " + (System.currentTimeMillis() - start) + " ms");
     }
     
     private void KMeansAndFindNewCenters() throws IOException {
@@ -185,10 +189,12 @@ public class Gmeans  {
         job.setOutputValueClass(NullWritable.class);
         job.setOutputFormat(NullOutputFormat.class);
 
+        job.set("memcached_server", memcached_server);
         job.setInt("gmeans_iteration", gmeans_iteration);
         job.setNumReduceTasks(num_reduce_tasks);
         
         JobClient.runJob(job);
+        System.out.println("Execution time (till now): " + (System.currentTimeMillis() - start) + " ms");
     }
      
     private void TestClusters() throws IOException {
@@ -223,10 +229,11 @@ public class Gmeans  {
         job.setOutputValueClass(NullWritable.class);
         job.setOutputFormat(NullOutputFormat.class);
 
+        job.set("memcached_server", memcached_server);
         job.setInt("gmeans_iteration", gmeans_iteration);
 
         JobClient.runJob(job);
-
+        System.out.println("Execution time (till now): " + (System.currentTimeMillis() - start) + " ms");
     }
 
     private boolean ClusteringCompleted() {

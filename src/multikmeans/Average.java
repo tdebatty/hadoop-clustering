@@ -5,6 +5,7 @@ package multikmeans;
  * @author tibo
  */
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Iterator;
 import java.util.logging.Level;
@@ -31,6 +32,8 @@ import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
 
+
+
 /**
  *
  * @author tibo
@@ -47,20 +50,26 @@ public class Average extends Configured implements Tool{
     private String input_path;
     private Configuration conf;
     private int k_min = 1;
-    private int k_max = 200;
+    private int k_max = 10;
     private int k_step = 1;
-    private int iterations = 10;
+    private int iterations = 5;
+    private String memcached_server = "127.0.0.1";
     
 
     @Override
     public int run(String[] args) {
-        if (args.length != 1) {
-            System.out.println("Usage: multikmeans.Average <input path>");
+        if (args.length != 6) {
+            System.out.println("Usage: multikmeans.Average <input path> <iterations> <k_min> <k_max> <k_step> <memcached server>");
             return 1;
         }
         
         this.conf = getConf();
         this.input_path = args[0];
+        this.iterations = Integer.valueOf(args[1]);
+        this.k_min = Integer.valueOf(args[2]);
+        this.k_max = Integer.valueOf(args[3]);
+        this.k_step = Integer.valueOf(args[4]);
+        this.memcached_server = args[5];
         this.compute();
         
         return 0;
@@ -103,7 +112,7 @@ public class Average extends Configured implements Tool{
         MemcachedClient memcached;
         
         try {
-            memcached = new MemcachedClient(new InetSocketAddress("10.67.42.116", 11211));
+            memcached = new MemcachedClient(new InetSocketAddress(memcached_server, 11211));
         } catch (IOException ex) {
             Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, ex);
             System.out.println("Could not connect to Memcached server!");
@@ -143,8 +152,6 @@ public class Average extends Configured implements Tool{
         return 0;
     }
 }
-
-
 class AverageMapper
         extends MapReduceBase
         implements Mapper<LongWritable, Text, Text, DoubleWritable>

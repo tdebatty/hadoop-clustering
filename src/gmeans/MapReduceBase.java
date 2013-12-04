@@ -10,13 +10,15 @@ import net.spy.memcached.MemcachedClient;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.Reporter;
 
 /**
  *
  * @author tibo
  */
 public class MapReduceBase {
-    public static final double CRITICAL = 1.092; // Corresponds to alpha = 0.01
+    //public static final double CRITICAL = 1.092; // 99% certainty
+    public static final double CRITICAL = 0.787; // 95% certainty
     
     private MemcachedClient memcached;
     protected JobConf job;
@@ -25,7 +27,7 @@ public class MapReduceBase {
         this.job = job;
                 
         try {
-            memcached = new MemcachedClient(new InetSocketAddress("10.67.42.116", 11211));
+            memcached = new MemcachedClient(new InetSocketAddress(job.get("memcached_server", ""), 11211));
         } catch (IOException ex) {
             Logger.getLogger(MapReduceBase.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -70,9 +72,9 @@ public class MapReduceBase {
         return centers;
     }
     
-    protected boolean adtest(double[] values) {        
+    protected boolean adtest(double[] values, Reporter reporter) {        
         
-        double A2_star = a2star(values);
+        double A2_star = a2star(values, reporter);
         
         if (A2_star > CRITICAL) {
             return false;
@@ -82,12 +84,14 @@ public class MapReduceBase {
         }
     }
     
-    protected double a2star(double[] values) {
+    protected double a2star(double[] values, Reporter reporter) {
         NormalDistribution nd = new NormalDistribution();
         Arrays.sort(values);
+        reporter.progress();
         int n = values.length;
         double A2 = -n;
         for (int i = 1; i < n; i++) {
+            reporter.progress();
             A2 += - (2.0 * i - 1) / n * (Math.log(nd.cumulativeProbability(values[i-1])) + Math.log(1 - nd.cumulativeProbability(values[n - i])) );
         }
         return A2 * (1 + 4 / n - 25 / (n * n));

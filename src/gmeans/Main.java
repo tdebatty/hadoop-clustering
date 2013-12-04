@@ -29,16 +29,14 @@ public class Main extends Configured implements Tool{
     @Override
     public int run(String[] args) {
         if (args.length != 3) {
-            System.out.println("Usage: gmeans.Main <input path> <output path> <max gmeans iterations>");
+            System.out.println("Usage: gmeans.Main <input path> <max gmeans iterations> <memcached server>");
             return 1;
         }
         
-        
         Gmeans gmeans = new Gmeans(getConf());
         gmeans.input_path = args[0];
-        gmeans.output_path = args[1];
-        gmeans.max_iterations = Integer.valueOf(args[2]);
-        
+        gmeans.max_iterations = Integer.valueOf(args[1]);
+        gmeans.memcached_server = args[2];
         gmeans.run();
         
         return 0;

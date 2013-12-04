@@ -26,6 +26,7 @@ public class TestFewClustersMapper
     private ArrayList[] projections;
     private OutputCollector collector;
     private Point point = new Point();
+    private Reporter reporter;
     
     @Override
     public void map(
@@ -38,6 +39,7 @@ public class TestFewClustersMapper
         // Keep a reference to the collector, for use in close
         if (this.collector == null) {
             this.collector = collector;
+            this.reporter = reporter;
         }
         
         
@@ -116,9 +118,11 @@ public class TestFewClustersMapper
             double[] values = new double[projections[vectorid].size()];
             for (int i=0; i < projections[vectorid].size(); i++) {
                 values[i] = (double) projections[vectorid].get(i);
+                //System.out.print(values[i] + ";");
             }
+            //System.out.print("\n");
             values = StatUtils.normalize(values);
-            double a2star = a2star(values);
+            double a2star = a2star(values, reporter);
             collector.collect(new LongWritable(vectorid), new DoubleWritable(a2star));
             
         }

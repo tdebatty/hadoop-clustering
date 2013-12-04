@@ -35,18 +35,15 @@ public class TestReducer
             arraylist.add(list_of_projections.next().get());
         }
         
-        
         // because arraylist.toArray() returns a Double[] and not a double[] :-(
         double[] values = new double[arraylist.size()];
-        String values_string = "";
         for (int i=0; i< arraylist.size(); i++) {
             values[i] = (double) arraylist.get(i);
-            values_string += values[i] + ", ";
         }
         
         values = StatUtils.normalize(values);
         
-        if (adtest(values)) {
+        if (adtest(values, reporter)) {
             // values seem to follow a normal law
             // remove 2 new centers
             // keep single old center, and mark as found!

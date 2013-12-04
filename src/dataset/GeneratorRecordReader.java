@@ -22,9 +22,7 @@ class GeneratorRecordReader implements RecordReader<NullWritable, Text>{
         sum_of_weights = 0;
         for (int i = 0; i < centers.length; i++) {
             sum_of_weights += centers[i].weight;
-        }
-        
-        
+        }        
     }
 
     @Override

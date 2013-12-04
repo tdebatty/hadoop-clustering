@@ -97,10 +97,10 @@ public class Center {
 
     public String nextPoint() {
         String r = "";
-        r += (rng.nextDouble() * stdDev[0] + value[0]);
+        r += (rng.nextGaussian() * stdDev[0] + value[0]);
         
         for (int i = 1; i < dim; i++) {
-            r += ";" + (rng.nextDouble() * stdDev[i] + value[i]);
+            r += ";" + (rng.nextGaussian() * stdDev[i] + value[i]);
         }
         return r;
         

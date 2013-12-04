@@ -29,10 +29,11 @@ import org.apache.hadoop.mapred.lib.NullOutputFormat;
 public class MultiKmeans {
     public int iterations = 5;
     public int k_min = 1;
-    public int k_max = 200;
+    public int k_max = 10;
     public int k_step = 1;
     public String input_path = "";
-    public int num_reduce_tasks = 48;    
+    public int num_reduce_tasks = 48;
+    public String memcached_server = "127.0.0.1";
     
     protected Configuration conf;
     protected int iteration;
@@ -47,6 +48,7 @@ public class MultiKmeans {
         System.out.println("Input path: " + input_path);
         
         long start = System.currentTimeMillis();
+        long end;
         
         try {
             PickInitialCenters();
@@ -70,7 +72,7 @@ public class MultiKmeans {
             job.setMapOutputKeyClass(Text.class); // k_centerid
             job.setMapOutputValueClass(Point.class);
             
-            //job.setCombinerClass(MultiKmeansCombiner.class);
+            job.setCombinerClass(MultiKmeansCombiner.class);
             
             job.setReducerClass(MultiKmeansReducer.class);
             // Nothing to write : centers will go to cache
@@ -84,6 +86,7 @@ public class MultiKmeans {
             job.setInt("k_max", k_max);
             job.setInt("k_step", k_step);
             job.setInt("iteration", iteration);
+            job.set("memcached_server", memcached_server);
             
             try {
                 JobClient.runJob(job);
@@ -91,11 +94,15 @@ public class MultiKmeans {
                 Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex);
                 return 1;
             }
+            
+            end = System.currentTimeMillis();
+            System.out.println("Execution time (so far): " + (end - start) + " ms");
         }
         
-        long end = System.currentTimeMillis();
+        
         
         System.out.println("Clustering completed!");
+        end = System.currentTimeMillis();
         System.out.println("Execution time: " + (end - start) + " ms");
         return 0;
     }
@@ -114,8 +121,7 @@ public class MultiKmeans {
         InputStream in = fs.open(new Path(input_file));
         BufferedReader br = new BufferedReader(new InputStreamReader(in));
 
-        MemcachedClient memcached = new MemcachedClient(
-                    new InetSocketAddress("10.67.42.116", 11211));
+        MemcachedClient memcached = new MemcachedClient(new InetSocketAddress(memcached_server, 11211));
  
         Point point = new Point();
         int max_num_centers = (k_max - k_min + 1) / k_step;
