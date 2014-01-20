@@ -28,8 +28,8 @@ public class Main extends Configured implements Tool{
 
     @Override
     public int run(String[] args) {
-        if (args.length != 3) {
-            System.out.println("Usage: gmeans.Main <input path> <max gmeans iterations> <memcached1:11211,memcached2:11211>");
+        if (args.length != 4) {
+            System.out.println("Usage: gmeans.Main <input path> <max gmeans iterations> <memcached1:11211,memcached2:11211> <num reduce tasks>");
             return 1;
         }
         
@@ -37,6 +37,7 @@ public class Main extends Configured implements Tool{
         gmeans.input_path = args[0];
         gmeans.max_iterations = Integer.valueOf(args[1]);
         gmeans.memcached_servers = args[2];
+        gmeans.num_reduce_tasks = Integer.valueOf(args[3]);
         gmeans.run();
         
         return 0;
