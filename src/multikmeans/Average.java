@@ -5,12 +5,11 @@ package multikmeans;
  * @author tibo
  */
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import kmeans.Point;
+import net.spy.memcached.AddrUtil;
 import net.spy.memcached.MemcachedClient;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -77,12 +76,18 @@ public class Average extends Configured implements Tool{
     
     
     public int compute() {
+        System.out.println("MultiKMeans : Average");
+        System.out.println("Input pagt: " + input_path);
+        System.out.println("K min: " + k_min);
+        System.out.println("K max: " + k_max);
+        System.out.println("K step: " + k_step);
+        System.out.println("Memcached: " + memcached_server);
+        System.out.println("Iterations: " + iterations);
+        
         try {
             JobConf job = new JobConf(conf, getClass());
             job.setJobName("MultiKMeans : Average");
-            System.out.println("MultiKMeans : Average");
-            System.out.println("Input pagh: " + input_path);
-
+            
             FileInputFormat.setInputPaths(job, new Path(this.input_path));
             job.setInputFormat(TextInputFormat.class);
 
@@ -100,6 +105,7 @@ public class Average extends Configured implements Tool{
             job.setInt("k_step", k_step);
             job.setInt("iterations", iterations);
 
+            job.set("memcached_server", memcached_server);
 
             JobClient.runJob(job);
             
@@ -112,7 +118,7 @@ public class Average extends Configured implements Tool{
         MemcachedClient memcached;
         
         try {
-            memcached = new MemcachedClient(new InetSocketAddress(memcached_server, 11211));
+            memcached = new MemcachedClient(AddrUtil.getAddresses(memcached_server));
         } catch (IOException ex) {
             Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, ex);
             System.out.println("Could not connect to Memcached server!");
@@ -141,7 +147,7 @@ public class Average extends Configured implements Tool{
                     average += Double.valueOf((String) mem_object);
                     count++;
                 }
-                System.out.println("K=" + k + " | Sum of Avg dist=" + average + " | Real # clusters=" + k);
+                System.out.println("K=" + k + " | Sum of Avg dist=" + average + " | Real # clusters=" + count);
                 
             }
         

@@ -1,9 +1,9 @@
 package kmeans;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
+import net.spy.memcached.AddrUtil;
 import net.spy.memcached.MemcachedClient;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -21,6 +21,7 @@ public class KmeansReduce implements Reducer<LongWritable, Point, NullWritable, 
     protected JobConf job;
     private int iteration;
     private int k;
+    protected String memcached_servers = "127.0.0.1";
 
     @Override
     public void reduce(
@@ -51,8 +52,7 @@ public class KmeansReduce implements Reducer<LongWritable, Point, NullWritable, 
     }
 
     private void writeCenterToCache(long center_id, Point new_center) throws IOException {
-        MemcachedClient memcached = new MemcachedClient(
-                new InetSocketAddress("127.0.0.1", 11211));
+        MemcachedClient memcached = new MemcachedClient(AddrUtil.getAddresses(memcached_servers));
 
         String mc_key = "center_" + (iteration + 1) + "_" + center_id;
         memcached.set(mc_key, 0, new_center.toString());

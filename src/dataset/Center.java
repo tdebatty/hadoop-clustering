@@ -35,7 +35,7 @@ public class Center {
     
     public double[] value;
     public double[] stdDev;
-    public int weight = 1;
+    public float weight = 1;
     
     private int dim;
     private Random rng;
@@ -79,7 +79,7 @@ public class Center {
         }
         
         // weight
-        weight = Integer.valueOf(array_string[array_string.length - 1]);
+        weight = Float.valueOf(array_string[array_string.length - 1]);
         
         // Create rng
         // Java.util.random uses system.nanotime as seed

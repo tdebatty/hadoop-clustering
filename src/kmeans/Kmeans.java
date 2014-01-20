@@ -2,10 +2,10 @@ package kmeans;
 
 
 import java.io.*;
-import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import net.spy.memcached.AddrUtil;
 import net.spy.memcached.MemcachedClient;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
@@ -23,6 +23,7 @@ public class Kmeans  {
     public int iterations = 5;
     public int k = 10;
     public String input_path = "";
+    public String memcached_servers = "127.0.0.1";
     
     protected Configuration conf;
 
@@ -97,8 +98,7 @@ public class Kmeans  {
         InputStream in = fs.open(new Path(input_file));
         BufferedReader br = new BufferedReader(new InputStreamReader(in));
 
-        MemcachedClient memcached = new MemcachedClient(
-                    new InetSocketAddress("127.0.0.1", 11211));
+        MemcachedClient memcached = new MemcachedClient(AddrUtil.getAddresses(memcached_servers));
  
         for (int i = 0; i < this.k; i++) {
             Point point = new Point();

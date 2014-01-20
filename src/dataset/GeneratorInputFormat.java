@@ -83,17 +83,17 @@ public class GeneratorInputFormat implements InputFormat<NullWritable, Text> {
             // Value
             center.value = new double[dim];
             for (int j = 0; j < dim; j++) {
-                center.value[j] = r.nextDouble() * 1000000; // 0 .. 1000.000
+                center.value[j] = 10 * i; //r.nextDouble() * 1000000; // 0 .. 1000.000
             }
             
             // Std Dev
             center.stdDev = new double[dim];
             for (int j = 0; j < dim; j++) {
-                center.stdDev[j] = r.nextDouble() * 10; // 0 .. 10
+                center.stdDev[j] = r.nextDouble() * 2; // 0 .. 2
             }
             
             // Weight
-            center.weight = r.nextInt(10) + 1; // 1 .. 10
+            center.weight = 0.5f + r.nextFloat(); // 0.5..1.5
             
             centers[i] = center;
         }

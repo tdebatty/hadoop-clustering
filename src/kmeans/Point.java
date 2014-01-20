@@ -10,7 +10,7 @@ import org.apache.hadoop.io.*;
  * @author tibo
  */
 public class Point implements Writable {
-    public static int DIM = 3;
+    public static int DIM = 10;
     public static String DELIMITER = ";";
     
     public long count;
@@ -51,8 +51,31 @@ public class Point implements Writable {
         for (int i = 1; i < DIM; i++) {
             r += DELIMITER + value[i];
         }
+        
+        r += DELIMITER + count;
 
         return r;
+    }
+    
+    /* Static String parser */
+    public void parse(String string) {
+        String[] array_string = string.split(DELIMITER);
+        parse(array_string);
+    }
+    
+    protected void parse(String[] array_string) {
+        double[] array_double = new double[DIM];
+        
+        for (int i = 0; i < DIM; i++) {
+            array_double[i] = Double.valueOf(array_string[i]);
+        }
+        
+        value = array_double;
+        count = 1;
+        
+        if (array_string.length > DIM) {
+            count = Long.valueOf(array_string[DIM]);
+        }
     }
 
     /* Actual methods */
@@ -79,22 +102,5 @@ public class Point implements Writable {
         }
 
         //count = 1;
-    }
-    
-    /* Static String parser */
-    public void parse(String string) {
-        String[] array_string = string.split(DELIMITER);
-        parse(array_string);
-    }
-    
-    protected void parse(String[] array_string) {
-        double[] array_double = new double[DIM];
-        
-        for (int i = 0; i < DIM; i++) {
-            array_double[i] = Double.valueOf(array_string[i]);
-        }
-        
-        value = array_double;
-        count = 1;
     }
 }

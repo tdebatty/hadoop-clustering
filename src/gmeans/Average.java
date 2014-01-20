@@ -9,11 +9,10 @@
 package gmeans;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import net.spy.memcached.AddrUtil;
 import net.spy.memcached.MemcachedClient;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -53,7 +52,7 @@ public class Average extends Configured implements Tool{
     @Override
     public int run(String[] args) {
         if (args.length != 2) {
-            System.out.println("Usage: gmeans.Average <input path> <memcached server>");
+            System.out.println("Usage: gmeans.Average <input path> <memcached servers>");
             return 1;
         }
         
@@ -84,6 +83,7 @@ public class Average extends Configured implements Tool{
             job.setOutputValueClass(NullWritable.class);
             job.setOutputFormat(NullOutputFormat.class);
 
+            job.set("memcached_server", memcached_server);
 
             JobClient.runJob(job);
             
@@ -96,7 +96,7 @@ public class Average extends Configured implements Tool{
         MemcachedClient memcached;
         
         try {
-            memcached = new MemcachedClient(new InetSocketAddress(memcached_server, 11211));
+            memcached = new MemcachedClient(AddrUtil.getAddresses(memcached_server));
         } catch (IOException ex) {
             Logger.getLogger(Gmeans.class.getName()).log(Level.SEVERE, null, ex);
             System.out.println("Could not connect to Memcached server!");
@@ -129,6 +129,7 @@ public class Average extends Configured implements Tool{
         return 0;
     }
 }
+
 class AverageMapper
         extends MapReduceBase
         implements Mapper<LongWritable, Text, LongWritable, DoubleWritable>

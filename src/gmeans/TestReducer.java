@@ -40,6 +40,7 @@ public class TestReducer
         for (int i=0; i< arraylist.size(); i++) {
             values[i] = (double) arraylist.get(i);
         }
+        arraylist = null;
         
         values = StatUtils.normalize(values);
         

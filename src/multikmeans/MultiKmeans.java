@@ -4,11 +4,11 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import kmeans.Point;
+import net.spy.memcached.AddrUtil;
 import net.spy.memcached.MemcachedClient;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
@@ -32,7 +32,7 @@ public class MultiKmeans {
     public int k_max = 10;
     public int k_step = 1;
     public String input_path = "";
-    public int num_reduce_tasks = 48;
+    public int num_reduce_tasks = 2;
     public String memcached_server = "127.0.0.1";
     
     protected Configuration conf;
@@ -121,16 +121,16 @@ public class MultiKmeans {
         InputStream in = fs.open(new Path(input_file));
         BufferedReader br = new BufferedReader(new InputStreamReader(in));
 
-        MemcachedClient memcached = new MemcachedClient(new InetSocketAddress(memcached_server, 11211));
+        MemcachedClient memcached = new MemcachedClient(AddrUtil.getAddresses(memcached_server));
  
         Point point = new Point();
-        int max_num_centers = (k_max - k_min + 1) / k_step;
         
-        for (int i = 0; i < max_num_centers; i++) {
+        for (int i = 0; i < k_max; i++) {
             point.parse(br.readLine());
             for (int k = k_min; k <= k_max; k += k_step) {
                 //System.out.println(point);
                 if (i < k) {
+                    //System.out.println("Write init center 0_" + k + "_" + i);
                     memcached.set("0_" + k + "_" + i, 0, point.toString());
                 }
             }

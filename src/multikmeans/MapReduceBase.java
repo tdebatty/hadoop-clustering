@@ -6,6 +6,7 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import net.spy.memcached.AddrUtil;
 import net.spy.memcached.MemcachedClient;
 import org.apache.hadoop.mapred.JobConf;
 
@@ -23,7 +24,7 @@ public class MapReduceBase {
         
         iteration = job.getInt("iteration", 0);
         try {
-            memcached = new MemcachedClient(new InetSocketAddress(job.get("memcached_server", ""), 11211));
+            memcached = new MemcachedClient(AddrUtil.getAddresses(job.get("memcached_server", "")));
         } catch (IOException ex) {
             Logger.getLogger(MapReduceBase.class.getName()).log(Level.SEVERE, null, ex);
         }

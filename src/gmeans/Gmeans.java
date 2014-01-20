@@ -4,10 +4,10 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import net.spy.memcached.AddrUtil;
 import net.spy.memcached.MemcachedClient;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
@@ -29,26 +29,42 @@ public class Gmeans  {
     
     public String input_path = "";
     public int max_iterations = 10;
-    // should be 95% of the total reduce task capacity
-    public int num_reduce_tasks = 48;
-    public String memcached_server = "127.0.0.1";
+    public String memcached_servers = "127.0.0.1";
+ 
+    public int task_heap = 1024; // in MB
+    public double memory_coeff = 1.5;
+    
+    public int num_reduce_tasks = 2; // Should be 95% of max reduce capacity
     
     protected Configuration conf;
     protected int gmeans_iteration = 1;
     protected MemcachedClient memcached;
     protected long start;
+    
+    // Number of points in the biggest cluster
+    // Used to choose between ''test clusters'' and ''test few clusters''
+    protected int current_biggest_cluster_size;
+    protected long max_cluster_size;
 
     Gmeans(Configuration conf) {
         this.conf = conf;
     }
     
     public int run() {
+        conf.set("mapred.child.java.opts", "-Xmx" + task_heap  + "m");
+        max_cluster_size = (long) Math.floor(task_heap * 1024 * 1024 / 64 /  memory_coeff);
+        
         System.out.println("G-means clustering");
         System.out.println("Input path: " + input_path);
+        System.out.println("Num reduce tasks: " + num_reduce_tasks);
+        System.out.println("Memcached servers: " + memcached_servers);
+        System.out.println("Task heap size: " + task_heap + "MB");
+        System.out.println("Max points per test task: " + max_cluster_size);
+        
         start = System.currentTimeMillis();
         
         try {
-            memcached = new MemcachedClient(new InetSocketAddress(memcached_server, 11211));
+            memcached = new MemcachedClient(AddrUtil.getAddresses(memcached_servers));
         } catch (IOException ex) {
             Logger.getLogger(Gmeans.class.getName()).log(Level.SEVERE, null, ex);
             System.out.println("Could not connect to Memcached server!");
@@ -63,8 +79,6 @@ public class Gmeans  {
             return 1;
         }
         
-        
-        
         while (!ClusteringCompleted()) {
             if (gmeans_iteration > max_iterations) {
                 System.out.println("Max iterations count reached...");
@@ -73,7 +87,7 @@ public class Gmeans  {
         
             try {
                 //KMeans();
-                //KMeans();
+                KMeans();
                 KMeans();
                 KMeansAndFindNewCenters();
                 TestClusters();
@@ -83,8 +97,6 @@ public class Gmeans  {
                 return 1;
             }
 
-            
-            
             gmeans_iteration++;
         }
         
@@ -142,7 +154,7 @@ public class Gmeans  {
         job.setOutputFormat(NullOutputFormat.class);
 
         job.setInt("gmeans_iteration", gmeans_iteration);
-        job.set("memcached_server", memcached_server);
+        job.set("memcached_server", memcached_servers);
         job.setNumReduceTasks(num_reduce_tasks);
 
         JobClient.runJob(job);
@@ -189,7 +201,7 @@ public class Gmeans  {
         job.setOutputValueClass(NullWritable.class);
         job.setOutputFormat(NullOutputFormat.class);
 
-        job.set("memcached_server", memcached_server);
+        job.set("memcached_server", memcached_servers);
         job.setInt("gmeans_iteration", gmeans_iteration);
         job.setNumReduceTasks(num_reduce_tasks);
         
@@ -205,31 +217,40 @@ public class Gmeans  {
         FileInputFormat.setInputPaths(job, new Path(this.input_path));
         job.setInputFormat(TextInputFormat.class);
 
-        
-        
         int num_clusters = (int) Math.pow(2, gmeans_iteration - 1);
-        if (num_clusters < num_reduce_tasks) {
-            System.out.println("Only " + num_clusters + " clusters to test : using alternative mode...");
+        System.out.println("Currently " + num_clusters + " clusters to test");
+        System.out.println("Biggest cluster has " + current_biggest_cluster_size + " points");
+        System.out.println("Maximum number of points that can be handled by a single reducer is " + max_cluster_size);
+        
+        if (
+                num_clusters >= num_reduce_tasks
+                && current_biggest_cluster_size < max_cluster_size  ) {
+            
+            System.out.println("Using classical method : ADTest performed by reducer");
+
+            job.setMapperClass(TestMapper.class);
+            job.setMapOutputKeyClass(LongWritable.class); // center id
+            job.setMapOutputValueClass(DoubleWritable.class);
+            job.setReducerClass(TestReducer.class);
+            job.setNumReduceTasks(num_reduce_tasks);
+            
+            
+        } else {
+            System.out.println("Using alternative method : ADTest performed by mapper");
             job.setMapperClass(TestFewClustersMapper.class);
             job.setMapOutputKeyClass(LongWritable.class); // center id
             job.setMapOutputValueClass(DoubleWritable.class);
             
             job.setReducerClass(TestFewClustersReducer.class);
             job.setNumReduceTasks(num_clusters);
-            
-        } else {
-            job.setMapperClass(TestMapper.class);
-            job.setMapOutputKeyClass(LongWritable.class); // center id
-            job.setMapOutputValueClass(DoubleWritable.class);
-            job.setReducerClass(TestReducer.class);
-            job.setNumReduceTasks(num_reduce_tasks);
+
         }
-        
+      
         job.setOutputKeyClass(NullWritable.class);
         job.setOutputValueClass(NullWritable.class);
         job.setOutputFormat(NullOutputFormat.class);
 
-        job.set("memcached_server", memcached_server);
+        job.set("memcached_server", memcached_servers);
         job.setInt("gmeans_iteration", gmeans_iteration);
 
         JobClient.runJob(job);
@@ -240,6 +261,8 @@ public class Gmeans  {
         if (gmeans_iteration == 1) {
             return false;
         }
+        
+        current_biggest_cluster_size = 0;
         
         boolean clustering_completed = true;
         int max_centers = (int) Math.pow(2, gmeans_iteration - 1);
@@ -277,6 +300,10 @@ public class Gmeans  {
 
             } else {
                 clustering_completed = false;
+                
+                if (point.count > current_biggest_cluster_size) {
+                    current_biggest_cluster_size = (int) point.count;
+                }
             }
         }
         System.out.println("Found " + found + " clusters till now...");

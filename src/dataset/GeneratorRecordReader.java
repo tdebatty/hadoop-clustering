@@ -14,11 +14,12 @@ class GeneratorRecordReader implements RecordReader<NullWritable, Text>{
     private final int points_per_task;
     private int current_point = 0;
     private final Center[] centers;
-    private int sum_of_weights;
+    private float sum_of_weights;
 
     GeneratorRecordReader(JobConf job) {
         points_per_task = job.getInt(GeneratorInputFormat.POINTS_PER_SPLIT, -1);
         centers = Center.parseArray(job.get(GeneratorInputFormat.CENTERS));
+        
         sum_of_weights = 0;
         for (int i = 0; i < centers.length; i++) {
             sum_of_weights += centers[i].weight;
@@ -31,11 +32,16 @@ class GeneratorRecordReader implements RecordReader<NullWritable, Text>{
             return false;
         }
         
-        int next_center = current_point % sum_of_weights;
+        float next_center = current_point % sum_of_weights;
         
         int i = 0;
-        while ((next_center -= centers[i].weight) > 0) {
+        while (next_center > centers[i].weight) {
+            next_center -= centers[i].weight;
             i++;
+        }
+        
+        if (i >= centers.length) {
+            i = centers.length - 1;
         }
         
         value.set(centers[i].nextPoint());

@@ -16,8 +16,8 @@ public class Point extends kmeans.Point {
     protected void parse(String[] array_string) {
         super.parse(array_string);
         
-        if (array_string.length == (DIM + 1)) {
-            found = Boolean.valueOf(array_string[DIM]);
+        if (array_string.length == (DIM + 2)) {
+            found = Boolean.valueOf(array_string[DIM+1]);
         }
     }
 }

@@ -1,11 +1,11 @@
 package gmeans;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import net.spy.memcached.AddrUtil;
 import net.spy.memcached.MemcachedClient;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.linear.ArrayRealVector;
@@ -17,8 +17,8 @@ import org.apache.hadoop.mapred.Reporter;
  * @author tibo
  */
 public class MapReduceBase {
-    //public static final double CRITICAL = 1.092; // 99% certainty
-    public static final double CRITICAL = 0.787; // 95% certainty
+    public static final double CRITICAL = 1.092; // 99% certainty
+    //public static final double CRITICAL = 0.787; // 95% certainty
     
     private MemcachedClient memcached;
     protected JobConf job;
@@ -27,7 +27,7 @@ public class MapReduceBase {
         this.job = job;
                 
         try {
-            memcached = new MemcachedClient(new InetSocketAddress(job.get("memcached_server", ""), 11211));
+            memcached = new MemcachedClient(AddrUtil.getAddresses(job.get("memcached_server", "")));
         } catch (IOException ex) {
             Logger.getLogger(MapReduceBase.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -76,11 +76,11 @@ public class MapReduceBase {
         
         double A2_star = a2star(values, reporter);
         
-        if (A2_star > CRITICAL) {
-            return false;
+        if (A2_star < CRITICAL) {
+            return true;
             
         } else {
-            return true;
+            return false;
         }
     }
     

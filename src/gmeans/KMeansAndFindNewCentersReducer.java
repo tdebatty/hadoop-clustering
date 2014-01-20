@@ -46,11 +46,15 @@ public class KMeansAndFindNewCentersReducer
             CacheWrite("IT-" + gmeans_iteration + "_CENTER-" + center_id, new_center.toString());
             
         } else {
-            int new_center_id = (int) (center_id.get() - KMeansAndFindNewCentersMapper.OFFSET);
-            CacheWrite("IT-" + (gmeans_iteration + 1) + "_CENTER-" + new_center_id, points.next().toString());
-            
-            new_center_id = new_center_id + (int) Math.pow(2, gmeans_iteration);
-            CacheWrite("IT-" + (gmeans_iteration + 1) + "_CENTER-" + new_center_id, points.next().toString());
+            Point center_1 = points.next();
+            // Check we have at least 2 points
+            if (points.hasNext()) {
+                int new_center_id = (int) (center_id.get() - KMeansAndFindNewCentersMapper.OFFSET);
+                CacheWrite("IT-" + (gmeans_iteration + 1) + "_CENTER-" + new_center_id, center_1.toString());
+
+                new_center_id = new_center_id + (int) Math.pow(2, gmeans_iteration);
+                CacheWrite("IT-" + (gmeans_iteration + 1) + "_CENTER-" + new_center_id, points.next().toString());
+            }
         }
     }
 

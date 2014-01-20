@@ -4,8 +4,8 @@
  *     gmeans.Main 
  *     -libjars /home/tibo/Java/spymemcached-2.9.1.jar,/home/tibo/Java/commons-math3-3.2/commons-math3-3.2.jar
  *     input
- *     output
  *     max iterations
+ *     comma separated list of memcached servers
  */
 
 package gmeans;
@@ -29,14 +29,14 @@ public class Main extends Configured implements Tool{
     @Override
     public int run(String[] args) {
         if (args.length != 3) {
-            System.out.println("Usage: gmeans.Main <input path> <max gmeans iterations> <memcached server>");
+            System.out.println("Usage: gmeans.Main <input path> <max gmeans iterations> <memcached1:11211,memcached2:11211>");
             return 1;
         }
         
         Gmeans gmeans = new Gmeans(getConf());
         gmeans.input_path = args[0];
         gmeans.max_iterations = Integer.valueOf(args[1]);
-        gmeans.memcached_server = args[2];
+        gmeans.memcached_servers = args[2];
         gmeans.run();
         
         return 0;
