@@ -86,7 +86,8 @@ public class Gmeans  {
             }
         
             try {
-                //KMeans();
+                KMeans();
+                KMeans();
                 KMeans();
                 KMeans();
                 KMeansAndFindNewCenters();

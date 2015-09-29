@@ -44,7 +44,7 @@ public class GeneratorInputFormat implements InputFormat<NullWritable, Text> {
     @Override
     public InputSplit[] getSplits(JobConf job, int numSplits) throws IOException {
         
-        numSplits = 4;
+        numSplits = 10;
         
         int num_centers = job.getInt(NUM_CENTERS, -1);
         int dim = job.getInt(DIMENSIONALITY, -1);

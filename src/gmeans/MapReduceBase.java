@@ -2,6 +2,7 @@ package gmeans;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -17,19 +18,29 @@ import org.apache.hadoop.mapred.Reporter;
  * @author tibo
  */
 public class MapReduceBase {
-    public static final double CRITICAL = 1.092; // 99% certainty
-    //public static final double CRITICAL = 0.787; // 95% certainty
+    //public static final double CRITICAL = 1.092; // 99% certainty
+    public static final double CRITICAL = 0.787; // 95% certainty
     
     private MemcachedClient memcached;
     protected JobConf job;
     
     public void configure(JobConf job) {
         this.job = job;
-                
+        
+        // To avoid hitting the memcached servers too badly
+        /*Random rnd = new Random();
+        try {
+            Thread.sleep(rnd.nextInt(5000));
+            
+        } catch (InterruptedException ex) {
+            //Logger.getLogger(MapReduceBase.class.getName()).log(Level.SEVERE, null, ex);
+        }*/
+        
         try {
             memcached = new MemcachedClient(AddrUtil.getAddresses(job.get("memcached_server", "")));
         } catch (IOException ex) {
             Logger.getLogger(MapReduceBase.class.getName()).log(Level.SEVERE, null, ex);
+            
         }
     }
     
@@ -75,13 +86,7 @@ public class MapReduceBase {
     protected boolean adtest(double[] values, Reporter reporter) {        
         
         double A2_star = a2star(values, reporter);
-        
-        if (A2_star < CRITICAL) {
-            return true;
-            
-        } else {
-            return false;
-        }
+        return A2_star < CRITICAL;
     }
     
     protected double a2star(double[] values, Reporter reporter) {

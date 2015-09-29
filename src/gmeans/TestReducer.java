@@ -3,6 +3,7 @@ package gmeans;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Random;
 import org.apache.commons.math3.stat.StatUtils;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.LongWritable;
@@ -57,8 +58,6 @@ public class TestReducer
             CacheWrite("IT-" + gmeans_iteration + "_CENTER-" + (center_id.get() + (int) Math.pow(2, gmeans_iteration - 1)), "");
             
         }
-        
-        
     }
     
     @Override

@@ -2,6 +2,7 @@ package gmeans;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.Random;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapred.JobConf;
@@ -44,7 +45,6 @@ public class KMeansReducer
     @Override
     public void configure(JobConf job) {
         super.configure(job);
-        
         gmeans_iteration = job.getInt("gmeans_iteration", 0);
         centers = ReadCenters(gmeans_iteration);
     }   

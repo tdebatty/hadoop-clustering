@@ -171,8 +171,7 @@ class AverageMapper
         super.configure(job);
         int gmeans_last_iteration = (int) CacheRead("gmeans_last_iteration");
         centers = ReadCenters(gmeans_last_iteration);
-    }
-    
+    }   
 }
 
 class AverageReducer

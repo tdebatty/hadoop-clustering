@@ -38,7 +38,6 @@ class Generator {
         GeneratorInputFormat.setNumCenters(job, num_centers);
         GeneratorInputFormat.setNumPoints(job, num_points);
         
-
         // No mapper & no reducer
         // => Direct write to disk
         job.setNumReduceTasks(0);

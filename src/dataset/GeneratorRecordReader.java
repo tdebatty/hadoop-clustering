@@ -21,8 +21,8 @@ class GeneratorRecordReader implements RecordReader<NullWritable, Text>{
         centers = Center.parseArray(job.get(GeneratorInputFormat.CENTERS));
         
         sum_of_weights = 0;
-        for (int i = 0; i < centers.length; i++) {
-            sum_of_weights += centers[i].weight;
+        for (Center center : centers) {
+            sum_of_weights += center.weight;
         }        
     }
 
@@ -34,10 +34,14 @@ class GeneratorRecordReader implements RecordReader<NullWritable, Text>{
         
         float next_center = current_point % sum_of_weights;
         
-        int i = 0;
-        while (next_center > centers[i].weight) {
-            next_center -= centers[i].weight;
+        int i = -1;
+        // 0.0 <= next_center < sum_of_weights
+        while (next_center >= 0) {
             i++;
+            if (i >= centers.length) {
+                break;
+            }
+            next_center -= centers[i].weight;
         }
         
         if (i >= centers.length) {

@@ -1,6 +1,7 @@
 package gmeans;
 
 import java.io.IOException;
+import java.util.Random;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.JobConf;

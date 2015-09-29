@@ -5,6 +5,9 @@
 package gmeans;
 
 import java.io.IOException;
+import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.JobConf;
@@ -20,7 +23,7 @@ public class KMeansAndFindNewCentersMapper
         extends MapReduceBase
         implements Mapper<LongWritable, Text, LongWritable, Point> {
     
-    public static final long OFFSET = 1000000000;
+    public static final long OFFSET = Long.MAX_VALUE / 2;
     
     private int gmeans_iteration;
     private Point[] centers;

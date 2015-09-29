@@ -1,6 +1,7 @@
 package gmeans;
 
 import java.io.IOException;
+import java.util.Random;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.LongWritable;
@@ -84,8 +85,6 @@ public class TestMapper
     public void configure(JobConf job) {
         super.configure(job);
         gmeans_iteration = job.getInt("gmeans_iteration", 0);
-        
-        
         vectors = computeVectors(ReadCenters(gmeans_iteration));
         centers = ReadCenters(gmeans_iteration - 1);
     }   
